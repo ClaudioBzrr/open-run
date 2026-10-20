@@ -84,6 +84,7 @@
     <string name="map_unavailable">Route map unavailable</string>
     <string name="map_content_description">Route map</string>
     <string name="map_attribution">© OpenStreetMap contributors</string>
+    <string name="map_recenter">Show the full route</string>
     <string name="marker_start">Start</string>
     <string name="marker_end">End</string>
     <string name="marker_start_short">S</string>

@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -11,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -63,6 +65,7 @@ public class SessionDetailActivity extends AppCompatActivity {
     private String sessionId;
     private SessionEntity currentSession;
     private List<PointEntity> currentPoints = Collections.emptyList();
+    private List<GeoPoint> routePoints = Collections.emptyList();
     private File pendingImageFile;
     private boolean shareBusy;
 
@@ -103,6 +106,7 @@ public class SessionDetailActivity extends AppCompatActivity {
         map.setMultiTouchControls(true);
         map.setTilesScaledToDpi(true);
         map.getController().setZoom(16.0);
+        binding.buttonRecenterRoute.setOnClickListener(v -> fitRoute(true));
     }
 
     private void loadSession() {
@@ -183,13 +187,16 @@ public class SessionDetailActivity extends AppCompatActivity {
     }
 
     private void confirmDelete() {
-        new MaterialAlertDialogBuilder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.delete_activity_title)
                 .setMessage(R.string.delete_activity_message)
                 .setNegativeButton(R.string.button_cancel, null)
-                .setPositiveButton(R.string.delete_activity, (dialog, which) ->
+                .setPositiveButton(R.string.delete_activity, (d, which) ->
                         deleteActivity())
                 .show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+                ContextCompat.getColor(this, R.color.error)
+        );
     }
 
     private void deleteActivity() {
@@ -368,9 +375,12 @@ public class SessionDetailActivity extends AppCompatActivity {
     }
 
     private void renderRoute(List<PointEntity> points) {
+        binding.mapProgress.setVisibility(View.GONE);
+        binding.map.getOverlays().clear();
+        routePoints = Collections.emptyList();
+
         if (points == null || points.isEmpty()) {
-            binding.map.setVisibility(View.GONE);
-            binding.textMapEmpty.setVisibility(View.VISIBLE);
+            showEmptyMap();
             return;
         }
 
@@ -387,56 +397,80 @@ public class SessionDetailActivity extends AppCompatActivity {
         }
 
         if (route.isEmpty()) {
-            binding.map.setVisibility(View.GONE);
-            binding.textMapEmpty.setVisibility(View.VISIBLE);
+            showEmptyMap();
             return;
         }
 
         binding.map.setVisibility(View.VISIBLE);
         binding.textMapEmpty.setVisibility(View.GONE);
+        binding.textMapAttribution.setVisibility(View.VISIBLE);
+        binding.buttonRecenterRoute.setVisibility(View.VISIBLE);
+
+        float density = getResources().getDisplayMetrics().density;
+
+        // A light casing under the route keeps the line readable over dense
+        // map areas and on long, zoomed-out routes.
+        Polyline halo = new Polyline(binding.map);
+        halo.setPoints(route);
+        halo.setColor(ContextCompat.getColor(this, R.color.map_route_halo));
+        halo.setWidth(13f * density);
+        Paint haloPaint = halo.getOutlinePaint();
+        haloPaint.setStrokeCap(Paint.Cap.ROUND);
+        haloPaint.setStrokeJoin(Paint.Join.ROUND);
+        haloPaint.setAlpha(235);
+        binding.map.getOverlays().add(halo);
 
         Polyline line = new Polyline(binding.map);
         line.setPoints(route);
-        line.setColor(ContextCompat.getColor(this, R.color.brand_primary));
-        line.setWidth(10f);
+        line.setColor(ContextCompat.getColor(this, R.color.map_route));
+        line.setWidth(7f * density);
+        Paint linePaint = line.getOutlinePaint();
+        linePaint.setStrokeCap(Paint.Cap.ROUND);
+        linePaint.setStrokeJoin(Paint.Join.ROUND);
         binding.map.getOverlays().add(line);
 
         Marker start = new Marker(binding.map);
         start.setPosition(route.get(0));
-        start.setTextLabelBackgroundColor(
-                ContextCompat.getColor(this, R.color.brand_primary)
-        );
-        start.setTextLabelForegroundColor(
-                ContextCompat.getColor(this, R.color.color_on_primary)
-        );
-        start.setTextLabelFontSize(14);
-        start.setTextIcon(getString(R.string.marker_start_short));
+        start.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_map_start));
+        start.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         start.setTitle(getString(R.string.marker_start));
         binding.map.getOverlays().add(start);
 
         Marker end = new Marker(binding.map);
         end.setPosition(route.get(route.size() - 1));
-        end.setTextLabelBackgroundColor(
-                ContextCompat.getColor(this, R.color.brand_accent)
-        );
-        end.setTextLabelForegroundColor(
-                ContextCompat.getColor(this, R.color.brand_on_accent)
-        );
-        end.setTextLabelFontSize(14);
-        end.setTextIcon(getString(R.string.marker_end_short));
+        end.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_map_end));
+        end.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         end.setTitle(getString(R.string.marker_end));
         binding.map.getOverlays().add(end);
 
-        binding.map.post(() -> {
-            if (route.size() == 1) {
-                binding.map.getController().setCenter(route.get(0));
-                binding.map.getController().setZoom(17.0);
-            } else {
-                BoundingBox box = BoundingBox.fromGeoPoints(route);
-                binding.map.zoomToBoundingBox(box, false, 90);
-            }
-            binding.map.invalidate();
-        });
+        routePoints = route;
+        binding.map.post(() -> fitRoute(false));
+    }
+
+    private void showEmptyMap() {
+        binding.map.getOverlays().clear();
+        binding.map.setVisibility(View.GONE);
+        binding.textMapEmpty.setVisibility(View.VISIBLE);
+        binding.textMapAttribution.setVisibility(View.GONE);
+        binding.buttonRecenterRoute.setVisibility(View.GONE);
+        binding.mapProgress.setVisibility(View.GONE);
+    }
+
+    private void fitRoute(boolean animate) {
+        if (routePoints.isEmpty()) {
+            return;
+        }
+        if (routePoints.size() == 1) {
+            binding.map.getController().setCenter(routePoints.get(0));
+            binding.map.getController().setZoom(17.0);
+        } else {
+            BoundingBox box = BoundingBox.fromGeoPoints(routePoints);
+            int padding = Math.round(
+                    48f * getResources().getDisplayMetrics().density
+            );
+            binding.map.zoomToBoundingBox(box, animate, padding);
+        }
+        binding.map.invalidate();
     }
 
     @Override

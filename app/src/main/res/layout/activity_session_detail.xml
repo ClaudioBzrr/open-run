@@ -14,42 +14,89 @@
         app:navigationIconTint="?attr/colorOnSurface"
         app:titleTextAppearance="?attr/textAppearanceTitleLarge" />
 
-    <FrameLayout
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/map_card"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:background="@color/surface_variant">
+        android:layout_height="@dimen/detail_map_height"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="20dp"
+        app:cardBackgroundColor="@color/surface_variant"
+        app:cardCornerRadius="26dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/surface_variant"
+        app:strokeWidth="1dp">
 
-        <org.osmdroid.views.MapView
-            android:id="@+id/map"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:contentDescription="@string/map_content_description" />
+            android:background="@color/surface_variant">
 
-        <TextView
-            android:id="@+id/text_map_empty"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:background="?attr/colorSurface"
-            android:padding="16dp"
-            android:text="@string/map_unavailable"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:visibility="gone" />
+            <org.osmdroid.views.MapView
+                android:id="@+id/map"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/map_content_description" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:background="#99000000"
-            android:paddingStart="5dp"
-            android:paddingTop="3dp"
-            android:paddingEnd="5dp"
-            android:paddingBottom="3dp"
-            android:text="@string/map_attribution"
-            android:textColor="@color/white"
-            android:textSize="11sp" />
-    </FrameLayout>
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/map_progress"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_gravity="center"
+                android:indeterminate="true"
+                app:indicatorColor="@color/brand_primary"
+                app:trackThickness="3dp" />
+
+            <TextView
+                android:id="@+id/text_map_empty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:background="@drawable/bg_map_empty"
+                android:paddingStart="18dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="18dp"
+                android:paddingBottom="14dp"
+                android:text="@string/map_unavailable"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/button_recenter_route"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_gravity="bottom|start"
+                android:layout_marginStart="12dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_map_control"
+                android:contentDescription="@string/map_recenter"
+                android:elevation="3dp"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:padding="9dp"
+                android:src="@drawable/ic_map_route"
+                android:visibility="gone"
+                app:tint="@color/brand_primary" />
+
+            <TextView
+                android:id="@+id/text_map_attribution"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="12dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_map_attribution"
+                android:paddingStart="7dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="3dp"
+                android:text="@string/map_attribution"
+                android:textColor="@color/white"
+                android:textSize="11sp" />
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"

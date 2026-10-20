@@ -50,7 +50,7 @@ public final class ShareCardGenerator {
     private static final int MAP_HEIGHT = MAP_BOTTOM - MAP_TOP;
 
     private static final int TILE_SIZE = 256;
-    private static final int MIN_ZOOM = 10;
+    private static final int MIN_ZOOM = 6;
     private static final int MAX_ZOOM = 16;
     private static final int MAX_TILES = 24;
     private static final String TILE_URL = "https://tile.openstreetmap.org/";
@@ -266,15 +266,15 @@ public final class ShareCardGenerator {
 
         Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
         halo.setStyle(Paint.Style.STROKE);
-        halo.setStrokeWidth(22f);
+        halo.setStrokeWidth(28f);
         halo.setStrokeCap(Paint.Cap.ROUND);
         halo.setStrokeJoin(Paint.Join.ROUND);
-        halo.setColor(Color.argb(220, 255, 255, 255));
+        halo.setColor(Color.argb(225, 255, 255, 255));
         canvas.drawPath(route, halo);
 
         Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
         line.setStyle(Paint.Style.STROKE);
-        line.setStrokeWidth(11f);
+        line.setStrokeWidth(14f);
         line.setStrokeCap(Paint.Cap.ROUND);
         line.setStrokeJoin(Paint.Join.ROUND);
         line.setColor(BRAND);
@@ -317,15 +317,45 @@ public final class ShareCardGenerator {
         ));
         canvas.drawRect(MAP_LEFT, MAP_TOP, MAP_RIGHT, MAP_BOTTOM, background);
 
-        Paint grid = new Paint(Paint.ANTI_ALIAS_FLAG);
-        grid.setColor(Color.argb(80, 190, 208, 196));
-        grid.setStrokeWidth(1.2f);
-        for (int x = MAP_LEFT; x <= MAP_RIGHT; x += 72) {
-            canvas.drawLine(x, MAP_TOP, x, MAP_BOTTOM, grid);
-        }
-        for (int y = MAP_TOP; y <= MAP_BOTTOM; y += 72) {
-            canvas.drawLine(MAP_LEFT, y, MAP_RIGHT, y, grid);
-        }
+        // A soft, map-like fallback. The old checkerboard grid looked like
+        // missing tiles when a long route was rendered without connectivity.
+        Paint park = new Paint(Paint.ANTI_ALIAS_FLAG);
+        park.setColor(Color.argb(80, 194, 224, 203));
+        canvas.drawCircle(MAP_LEFT + 180, MAP_TOP + 190, 190, park);
+        canvas.drawCircle(MAP_RIGHT - 150, MAP_BOTTOM - 110, 150, park);
+
+        Path roads = new Path();
+        roads.moveTo(MAP_LEFT - 40, MAP_TOP + 150);
+        roads.cubicTo(
+                MAP_LEFT + 280,
+                MAP_TOP + 50,
+                MAP_RIGHT - 330,
+                MAP_TOP + 310,
+                MAP_RIGHT + 40,
+                MAP_TOP + 220
+        );
+        roads.moveTo(MAP_LEFT + 130, MAP_BOTTOM + 40);
+        roads.cubicTo(
+                MAP_LEFT + 260,
+                MAP_BOTTOM - 230,
+                MAP_RIGHT - 190,
+                MAP_BOTTOM - 270,
+                MAP_RIGHT - 60,
+                MAP_TOP - 40
+        );
+
+        Paint road = new Paint(Paint.ANTI_ALIAS_FLAG);
+        road.setStyle(Paint.Style.STROKE);
+        road.setStrokeWidth(24f);
+        road.setStrokeCap(Paint.Cap.ROUND);
+        road.setStrokeJoin(Paint.Join.ROUND);
+        road.setColor(Color.argb(165, 255, 255, 255));
+        canvas.drawPath(roads, road);
+
+        Paint roadEdge = new Paint(road);
+        roadEdge.setStrokeWidth(2f);
+        roadEdge.setColor(Color.argb(55, 150, 174, 160));
+        canvas.drawPath(roads, roadEdge);
     }
 
     private static void drawMapBorder(Canvas canvas, RectF mapRect) {
@@ -435,7 +465,8 @@ public final class ShareCardGenerator {
             connection.setReadTimeout(2500);
             connection.setRequestProperty(
                     "User-Agent",
-                    "OpenRun (" + context.getPackageName() + ")"
+                    "OpenRun/" + context.getPackageName()
+                            + " (https://github.com/ClaudioBzrr/open-run)"
             );
             connection.setRequestProperty("Accept", "image/png");
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {

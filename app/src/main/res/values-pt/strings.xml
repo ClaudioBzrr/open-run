@@ -84,6 +84,7 @@
     <string name="map_unavailable">Mapa do percurso indisponível</string>
     <string name="map_content_description">Mapa do percurso</string>
     <string name="map_attribution">© colaboradores do OpenStreetMap</string>
+    <string name="map_recenter">Mostrar o percurso completo</string>
     <string name="marker_start">Início</string>
     <string name="marker_end">Fim</string>
     <string name="marker_start_short">I</string>

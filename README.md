@@ -15,8 +15,8 @@ This is the first working slice (`0.5.0`):
 - Live moving time, distance, current/average pace, accuracy and GPS-loss state
 - Pause / resume / finish
 - Room persistence for sessions and track points
-- History list on the home screen
-- Activity detail screen with route map, start/end times and total duration
+- History list on the home screen with a delete button and swipe-to-delete
+- Activity detail screen with a rounded route map, start/end times and total duration
 - Pace and elevation performance charts
 - Delete activity action with confirmation
 - Save or share a PNG activity card with the route and stats

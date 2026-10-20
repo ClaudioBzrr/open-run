@@ -28,7 +28,12 @@ public class OpenRunApp extends Application {
                 this,
                 PreferenceManager.getDefaultSharedPreferences(this)
         );
-        Configuration.getInstance().setUserAgentValue(getPackageName());
+        // OSM asks apps to identify themselves with a contact channel. Using
+        // only the package name can get tile requests throttled or rejected.
+        Configuration.getInstance().setUserAgentValue(
+                "OpenRun/" + getPackageName()
+                        + " (https://github.com/ClaudioBzrr/open-run)"
+        );
 
         // Keep tiles in app-private storage. This avoids legacy storage
         // permissions and keeps the map cache out of shared folders.

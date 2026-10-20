@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Keep the map useful without pushing the details and share actions
+         off-screen in landscape. -->
+    <dimen name="detail_map_height">170dp</dimen>
+</resources>
