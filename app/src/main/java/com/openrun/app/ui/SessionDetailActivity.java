@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.openrun.app.OpenRunApp;
 import com.openrun.app.R;
 import com.openrun.app.data.AppDatabase;
@@ -23,6 +24,8 @@ import com.openrun.app.data.SessionEntity;
 import com.openrun.app.data.SessionRepository;
 import com.openrun.app.databinding.ActivitySessionDetailBinding;
 import com.openrun.app.util.Formatters;
+import com.openrun.app.util.PerformanceSeries;
+import com.openrun.app.util.PerformanceSeriesBuilder;
 import com.openrun.app.util.ShareCardGenerator;
 import com.openrun.core.model.ActivityType;
 import com.openrun.core.stats.GeoMath;
@@ -71,6 +74,14 @@ public class SessionDetailActivity extends AppCompatActivity {
 
         binding.toolbar.setNavigationContentDescription(R.string.navigate_back);
         binding.toolbar.setNavigationOnClickListener(v -> finish());
+        binding.toolbar.inflateMenu(R.menu.session_detail);
+        binding.toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_delete) {
+                confirmDelete();
+                return true;
+            }
+            return false;
+        });
         binding.buttonSaveImage.setOnClickListener(v -> prepareShare(true));
         binding.buttonShare.setOnClickListener(v -> prepareShare(false));
         setShareBusy(false);
@@ -150,7 +161,71 @@ public class SessionDetailActivity extends AppCompatActivity {
         binding.textTotalDuration.setText(Formatters.duration(total));
         binding.textMovingTime.setText(Formatters.duration(session.movingMs));
 
+        PerformanceSeries series = PerformanceSeriesBuilder.build(session, points);
+        binding.chartPace.setData(
+                getString(R.string.chart_pace_title),
+                getString(R.string.chart_unit_pace),
+                series.paceX,
+                series.paceY,
+                true,
+                ContextCompat.getColor(this, R.color.brand_primary)
+        );
+        binding.chartElevation.setData(
+                getString(R.string.chart_elevation_title),
+                getString(R.string.chart_unit_elevation),
+                series.elevationX,
+                series.elevationY,
+                false,
+                ContextCompat.getColor(this, R.color.brand_accent)
+        );
+
         renderRoute(points);
+    }
+
+    private void confirmDelete() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.delete_activity_title)
+                .setMessage(R.string.delete_activity_message)
+                .setNegativeButton(R.string.button_cancel, null)
+                .setPositiveButton(R.string.delete_activity, (dialog, which) ->
+                        deleteActivity())
+                .show();
+    }
+
+    private void deleteActivity() {
+        final String id = sessionId;
+        if (id == null) {
+            return;
+        }
+        setShareBusy(true);
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                repository.deleteSession(id);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    Toast.makeText(
+                            this,
+                            R.string.activity_deleted,
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    finish();
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    setShareBusy(false);
+                    Toast.makeText(
+                            this,
+                            R.string.delete_error,
+                            Toast.LENGTH_SHORT
+                    ).show();
+                });
+            }
+        });
     }
 
     private void prepareShare(boolean save) {

@@ -106,4 +106,17 @@
     <string name="share_saved">Image saved</string>
     <string name="share_error">Could not create the image</string>
     <string name="share_footer">Local-first</string>
+
+    <string name="performance_title">Performance</string>
+    <string name="chart_pace_title">Pace</string>
+    <string name="chart_elevation_title">Elevation</string>
+    <string name="chart_no_data">Not enough data</string>
+    <string name="chart_unit_pace">min/km</string>
+    <string name="chart_unit_elevation">m</string>
+
+    <string name="delete_activity">Delete</string>
+    <string name="delete_activity_title">Delete activity?</string>
+    <string name="delete_activity_message">This permanently removes this activity and its route from this device.</string>
+    <string name="activity_deleted">Activity deleted</string>
+    <string name="delete_error">Could not delete the activity</string>
 </resources>

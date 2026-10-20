@@ -35,7 +35,7 @@ public final class RecordingConfig {
         if (type == ActivityType.WALK) {
             return new RecordingConfig(type, 30, 20, 8.0d, false);
         }
-        return new RecordingConfig(type, 30, 20, 15.0d, false);
+        return new RecordingConfig(type, 25, 15, 15.0d, false);
     }
 
     public ActivityType getType() {

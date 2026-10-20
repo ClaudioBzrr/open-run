@@ -8,7 +8,7 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the first working slice (`0.4.0`):
+This is the first working slice (`0.5.0`):
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
@@ -17,11 +17,24 @@ This is the first working slice (`0.4.0`):
 - Room persistence for sessions and track points
 - History list on the home screen
 - Activity detail screen with route map, start/end times and total duration
+- Pace and elevation performance charts
+- Delete activity action with confirmation
 - Save or share a PNG activity card with the route and stats
 - In-app language selector (English / Portuguese)
 - English (default) and Portuguese (`values-pt`) resources
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
+
+New in 0.5.0:
+
+- Pace chart with a rolling 30-second window and downsampling
+- Elevation chart from barometer/GPS altitude samples
+- Custom dependency-free chart view
+- Delete activity from the detail toolbar; Room cascades the track points
+- GPS precision pass: fix timestamps use `elapsedRealtimeNanos`, vertical
+  accuracy is filtered, run accuracy thresholds are tighter, and the timeout
+  path no longer accepts a deliberately inaccurate first fix
+- Minimum accepted movement segment increased to reduce stationary jitter
 
 New in 0.4.0:
 
@@ -52,7 +65,7 @@ Fixed in 0.2.0:
 Not implemented yet:
 
 - GPX export and encrypted `.runbackup` import/export
-- Splits/elevation chart UI (elevation gain is already displayed)
+- Splits list UI (pace and elevation charts are available)
 - Crash recovery of an interrupted session (interrupted rows are preserved but
   not shown yet)
 - Auto-pause UI toggle, cadence, heart rate
@@ -145,13 +158,16 @@ Play Services.
    increase the moving time.
 7. Finish from the app. The detail screen must open with the map, route line,
    start/end markers, start/end times and total duration.
-8. Go back home and tap the saved activity. The same detail screen must open.
-9. Change the app language using the **EN/PT** chip in the header. The UI must
-   switch immediately and survive an app restart.
-10. Open the activity detail and use **Share**. The generated card must show the
+8. Confirm that the pace and elevation charts are drawn below the details.
+9. Go back home and tap the saved activity. The same detail screen must open.
+10. Change the app language using the **EN/PT** chip in the header. The UI must
+    switch immediately and survive an app restart.
+11. Open the activity detail and use **Share**. The generated card must show the
     route, start/end markers, start/end times, duration and stats.
-11. Use **Save image** and choose a destination in the system file picker.
-12. Force-stop the app during a session and reopen it. It must not crash; the
+12. Use **Save image** and choose a destination in the system file picker.
+13. Use the trash icon in the detail toolbar to delete an activity. Confirm that
+    it disappears from the history after returning home.
+14. Force-stop the app during a session and reopen it. It must not crash; the
     interrupted row is preserved in the database (not shown in history yet).
 
 ## Project layout
@@ -166,9 +182,10 @@ app/
   data/                     Room entities, DAO, database, repository
   tracking/                 Foreground service, FusedLocation, state holder
   ui/                       MainActivity, RecordActivity,
-                            SessionDetailActivity, history adapter
-  util/                     Formatting, in-app language selection and
-                            ShareCardGenerator
+                            SessionDetailActivity, PerformanceChartView,
+                            history adapter
+  util/                     Formatting, in-app language selection,
+                            PerformanceSeriesBuilder, ShareCardGenerator
   res/values/               English strings and colors
   res/values-pt/            Portuguese strings
   res/values-night/         Dark palette
@@ -197,7 +214,7 @@ gets an iOS sibling.
 2. The service creates a session row, starts a 1 Hz
    `PRIORITY_HIGH_ACCURACY` request and feeds fixes to `TrackingEngine`.
 3. `TrackFilter` rejects bad accuracy, duplicate timestamps, impossible jumps
-   and sub-0.5 m jitter.
+   and sub-0.8 m jitter.
 4. Accepted points are written to Room in order. Summaries are persisted every
    five seconds and on state changes.
 5. Finishing computes the final summary, marks the session `FINISHED`, updates
@@ -208,6 +225,29 @@ gets an iOS sibling.
 
 The service holds a partial wake lock while recording and releases it on
 stop/destroy.
+
+### GPS and movement accuracy
+
+- Sampling uses `PRIORITY_HIGH_ACCURACY` at 1 Hz while a foreground service
+  keeps the process alive with the screen off.
+- Point timing uses the fix's `elapsedRealtimeNanos`, not the time at which the
+  callback happened to run. Batched or delayed fixes therefore keep their real
+  spacing.
+- Runs accept horizontal accuracy up to 25 m and wait for 15 m before starting;
+  walks use 30 m/20 m. Points with altitude vertical accuracy worse than 30 m
+  are stored without altitude instead of polluting elevation data.
+- The session stays in **Finding GPS** until a fix within the accuracy
+  threshold arrives. It does not start the stopwatch with a known-bad fix.
+- Distance uses Haversine between accepted points and rejects implied speeds
+  above the activity limit. Segments shorter than 0.8 m are ignored to reduce
+  stationary jitter.
+- Pausing resets the segment anchor so movement while paused is not added to
+  the route.
+
+The performance charts are derived from the accepted points: pace uses a
+rolling 30-second window scaled to moving time, and elevation uses a smoothed
+altitude series. Both are downsampled for drawing and do not require a network
+connection.
 
 ## Localization
 

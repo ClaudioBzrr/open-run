@@ -106,4 +106,17 @@
     <string name="share_saved">Imagem salva</string>
     <string name="share_error">Não foi possível gerar a imagem</string>
     <string name="share_footer">Sem nuvem</string>
+
+    <string name="performance_title">Desempenho</string>
+    <string name="chart_pace_title">Ritmo</string>
+    <string name="chart_elevation_title">Elevação</string>
+    <string name="chart_no_data">Dados insuficientes</string>
+    <string name="chart_unit_pace">min/km</string>
+    <string name="chart_unit_elevation">m</string>
+
+    <string name="delete_activity">Excluir</string>
+    <string name="delete_activity_title">Excluir atividade?</string>
+    <string name="delete_activity_message">Isso remove permanentemente esta atividade e o percurso deste aparelho.</string>
+    <string name="activity_deleted">Atividade excluída</string>
+    <string name="delete_error">Não foi possível excluir a atividade</string>
 </resources>

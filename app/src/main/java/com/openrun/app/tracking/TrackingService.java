@@ -53,7 +53,6 @@ import java.util.UUID;
 public class TrackingService extends Service {
     private static final String CHANNEL_ID = "tracking";
     private static final int NOTIFICATION_ID = 42;
-    private static final long WARMUP_TIMEOUT_MS = 30_000L;
     private static final long SUMMARY_PERSIST_INTERVAL_MS = 5_000L;
 
     private FusedLocationProviderClient locationClient;
@@ -82,10 +81,6 @@ public class TrackingService extends Service {
             }
             long nowElapsedMs = SystemClock.elapsedRealtime();
             long nowEpochMs = System.currentTimeMillis();
-            if (current.getState() == TrackingState.ACQUIRING
-                    && nowElapsedMs - current.getSessionStartElapsedMs() >= WARMUP_TIMEOUT_MS) {
-                current.forceStart(nowElapsedMs, nowEpochMs);
-            }
             TrackingSnapshot snapshot = current.snapshot(nowElapsedMs, nowEpochMs);
             stateHolder.postSnapshot(snapshot);
             updateNotification(snapshot);
@@ -276,6 +271,7 @@ public class TrackingService extends Service {
         }
     }
 
+    @SuppressLint("Range")
     private void handleLocation(Location location) {
         TrackingEngine current = engine;
         String id = sessionId;
@@ -283,18 +279,30 @@ public class TrackingService extends Service {
             return;
         }
 
+        double altitude = Double.NaN;
+        if (location.hasAltitude()
+                && (!location.hasVerticalAccuracy()
+                || location.getVerticalAccuracyMeters() <= 30.0f)) {
+            altitude = location.getAltitude();
+        }
+
         RawFix fix = new RawFix(
                 location.getLatitude(),
                 location.getLongitude(),
-                location.hasAltitude() ? location.getAltitude() : Double.NaN,
+                altitude,
                 location.hasAccuracy() ? location.getAccuracy() : Double.NaN,
                 location.hasSpeed() ? location.getSpeed() : Double.NaN,
                 location.hasBearing() ? location.getBearing() : Double.NaN,
                 location.getTime() > 0 ? location.getTime() : System.currentTimeMillis()
         );
 
+        long fixElapsedMs = location.getElapsedRealtimeNanos() / 1_000_000L;
+        long nowElapsedMs = fixElapsedMs > 0
+                ? fixElapsedMs
+                : SystemClock.elapsedRealtime();
+
         int before = current.getPoints().size();
-        TrackingSnapshot snapshot = current.onFix(fix, SystemClock.elapsedRealtime());
+        TrackingSnapshot snapshot = current.onFix(fix, nowElapsedMs);
         if (snapshot == null) {
             return;
         }

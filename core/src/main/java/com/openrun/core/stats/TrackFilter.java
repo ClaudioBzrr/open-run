@@ -9,7 +9,7 @@ import com.openrun.core.model.RecordingConfig;
  * rejected sample never creates a gap in the accumulated distance.
  */
 public final class TrackFilter {
-    private static final double MIN_SEGMENT_METERS = 0.5d;
+    private static final double MIN_SEGMENT_METERS = 0.8d;
 
     private final RecordingConfig config;
     private RawFix lastAccepted;

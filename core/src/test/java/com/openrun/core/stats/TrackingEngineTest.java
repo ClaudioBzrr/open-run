@@ -105,16 +105,26 @@ public class TrackingEngineTest {
     }
 
     @Test
-    public void forceStartAcceptsTheNextFixEvenIfAccuracyIsPoor() {
+    public void forceStartStillWaitsForAGoodFix() {
         RecordingConfig config = new RecordingConfig(ActivityType.RUN, 30, 20, 15.0d, false);
         TrackingEngine engine = newEngine(config);
 
         engine.forceStart(START_ELAPSED + 30_000L, START_EPOCH + 30_000L);
         engine.onFix(fix(-23.55d, -46.63d, 80, START_EPOCH + 31_000L), START_ELAPSED + 31_000L);
 
-        TrackingSnapshot snapshot = engine.snapshot(START_ELAPSED + 31_000L, START_EPOCH + 31_000L);
-        assertEquals(TrackingState.RECORDING, snapshot.getState());
-        assertEquals(1, snapshot.getPointCount());
+        TrackingSnapshot poorFix = engine.snapshot(
+                START_ELAPSED + 31_000L,
+                START_EPOCH + 31_000L
+        );
+        assertEquals(TrackingState.RECORDING, poorFix.getState());
+        assertEquals(0, poorFix.getPointCount());
+
+        engine.onFix(fix(-23.55d, -46.63d, 10, START_EPOCH + 32_000L), START_ELAPSED + 32_000L);
+        TrackingSnapshot goodFix = engine.snapshot(
+                START_ELAPSED + 32_000L,
+                START_EPOCH + 32_000L
+        );
+        assertEquals(1, goodFix.getPointCount());
     }
 
     @Test

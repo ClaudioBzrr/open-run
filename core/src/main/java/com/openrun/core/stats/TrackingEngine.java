@@ -61,7 +61,6 @@ public final class TrackingEngine {
     private boolean autoPaused;
     private long slowSinceElapsedMs = -1;
     private long fastSinceElapsedMs = -1;
-    private boolean acceptNextFixRegardlessOfAccuracy;
     private SessionSummary summary;
 
     public synchronized void start(RecordingConfig config, long nowElapsedMs, long nowEpochMs) {
@@ -84,7 +83,6 @@ public final class TrackingEngine {
         state = TrackingState.RECORDING;
         recordingStartElapsedMs = nowElapsedMs;
         recordingStartEpochMs = nowEpochMs;
-        acceptNextFixRegardlessOfAccuracy = true;
     }
 
     public synchronized TrackingSnapshot onFix(RawFix fix, long nowElapsedMs) {
@@ -112,11 +110,9 @@ public final class TrackingEngine {
         }
 
         if (state == TrackingState.RECORDING) {
-            boolean ignoreAccuracy = acceptNextFixRegardlessOfAccuracy;
-            if (!filter.accept(fix, ignoreAccuracy)) {
+            if (!filter.accept(fix, false)) {
                 return snapshot(nowElapsedMs, fix.getTimestampEpochMs());
             }
-            acceptNextFixRegardlessOfAccuracy = false;
             appendPoint(fix, nowElapsedMs);
             maybeAutoPause(fix, nowElapsedMs);
         }
@@ -487,7 +483,6 @@ public final class TrackingEngine {
         autoPaused = false;
         slowSinceElapsedMs = -1;
         fastSinceElapsedMs = -1;
-        acceptNextFixRegardlessOfAccuracy = false;
         summary = null;
     }
 }
