@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Open Run</string>
+    <string name="home_tagline">Mova-se. Registre. Os dados são seus.</string>
+    <string name="home_subtitle">Sem conta. Sem nuvem. Suas atividades ficam neste aparelho.</string>
+    <string name="home_hero_kicker">CORRIDA SEM NUVEM</string>
+    <string name="start_run">Iniciar corrida</string>
+    <string name="start_walk">Iniciar caminhada</string>
+    <string name="start_run_subtitle">Registre ritmo, distância e parciais</string>
+    <string name="start_walk_subtitle">Uma caminhada tranquila ao ar livre</string>
+    <string name="history_title">Atividades recentes</string>
+    <string name="history_empty">Nenhuma atividade ainda. A primeira começa acima.</string>
+
+    <string name="activity_run">Corrida</string>
+    <string name="activity_walk">Caminhada</string>
+    <string name="label_distance">Distância</string>
+    <string name="label_duration">Duração</string>
+    <string name="label_pace">Ritmo</string>
+
+    <string name="status_acquiring">Buscando GPS…</string>
+    <string name="status_recording">Gravando</string>
+    <string name="status_paused">Pausado</string>
+    <string name="status_finished">Finalizado</string>
+    <string name="status_discarded">Descartado</string>
+    <string name="signal_lost">Sinal de GPS perdido</string>
+
+    <string name="button_pause">Pausar</string>
+    <string name="button_resume">Retomar</string>
+    <string name="button_finish">Finalizar</string>
+    <string name="button_done">Concluir</string>
+    <string name="button_cancel">Cancelar</string>
+    <string name="button_leave">Sair</string>
+    <string name="button_stay">Ficar</string>
+    <string name="button_open_settings">Abrir configurações</string>
+    <string name="button_continue">Continuar</string>
+    <string name="navigate_back">Voltar</string>
+
+    <string name="finish_title">Finalizar atividade?</string>
+    <string name="finish_message">A atividade será salva e a gravação será encerrada.</string>
+    <string name="leave_title">Gravação em andamento</string>
+    <string name="leave_message">A gravação continua em segundo plano se você sair desta tela.</string>
+
+    <string name="permission_title">Localização necessária</string>
+    <string name="permission_message">O Open Run precisa de localização precisa para medir distância e ritmo. Nada sai do seu aparelho.</string>
+    <string name="permission_denied_title">Permissão de localização negada</string>
+    <string name="permission_denied_message">Sem a permissão de localização, o app não consegue registrar o percurso. Você pode conceder nas configurações do sistema.</string>
+
+    <string name="notification_channel_name">Registro de atividade</string>
+    <string name="notification_channel_description">Mostra a atividade em andamento enquanto o Open Run grava seu percurso.</string>
+    <string name="notification_recording_title">Corrida em andamento</string>
+    <string name="notification_walk_title">Caminhada em andamento</string>
+    <string name="notification_paused_title">Atividade pausada</string>
+    <string name="notification_acquiring_title">Buscando GPS…</string>
+    <string name="notification_action_pause">Pausar</string>
+    <string name="notification_action_resume">Retomar</string>
+    <string name="notification_action_finish">Finalizar</string>
+    <string name="notification_text">%1$s · %2$s</string>
+    <string name="notification_paused_text">%1$s · em pausa</string>
+
+    <string name="summary_title">Atividade salva</string>
+    <string name="summary_message">%1$s\n%2$s\n%3$s</string>
+    <string name="summary_distance">Distância: %1$s</string>
+    <string name="summary_duration">Duração: %1$s</string>
+    <string name="summary_pace">Ritmo médio: %1$s</string>
+
+    <string name="error_title">Algo deu errado</string>
+    <string name="error_location_unavailable">Não foi possível iniciar a localização. Verifique se o GPS está ativado.</string>
+    <string name="error_permission">A permissão de localização foi perdida. A gravação parou.</string>
+
+    <string name="accuracy_labeled">Precisão: %1$s</string>
+    <string name="format_distance_km">%1$.2f km</string>
+    <string name="format_distance_m">%1$d m</string>
+    <string name="format_pace">%1$d:%2$02d /km</string>
+    <string name="format_accuracy">±%1$d m</string>
+    <string name="value_unknown">—</string>
+    <string name="time_zero">00:00</string>
+
+    <string name="detail_info_title">Detalhes da atividade</string>
+    <string name="label_start_time">Horário de início</string>
+    <string name="label_end_time">Horário de fim</string>
+    <string name="label_total_duration">Duração total</string>
+    <string name="label_moving_time">Tempo em movimento</string>
+    <string name="label_elevation_gain">Ganho de elevação</string>
+    <string name="map_unavailable">Mapa do percurso indisponível</string>
+    <string name="map_content_description">Mapa do percurso</string>
+    <string name="map_attribution">© colaboradores do OpenStreetMap</string>
+    <string name="marker_start">Início</string>
+    <string name="marker_end">Fim</string>
+    <string name="marker_start_short">I</string>
+    <string name="marker_end_short">F</string>
+    <string name="session_not_found">Atividade não encontrada</string>
+    <string name="format_elevation_m">%1$d m</string>
+
+    <string name="language_title">Idioma</string>
+    <string name="language_system">Padrão do sistema</string>
+    <string name="language_english">English</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_button">Alterar idioma</string>
+    <string name="language_code_en">EN</string>
+    <string name="language_code_pt">PT</string>
+
+    <string name="button_share">Compartilhar</string>
+    <string name="button_save_image">Salvar imagem</string>
+    <string name="share_chooser_title">Compartilhar atividade</string>
+    <string name="share_preparing">Preparando imagem…</string>
+    <string name="share_saved">Imagem salva</string>
+    <string name="share_error">Não foi possível gerar a imagem</string>
+    <string name="share_footer">Sem nuvem</string>
+</resources>

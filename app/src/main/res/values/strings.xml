@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Open Run</string>
+    <string name="home_tagline">Move. Record. Keep it yours.</string>
+    <string name="home_subtitle">No account. No cloud. Your activities stay on this device.</string>
+    <string name="home_hero_kicker">LOCAL-FIRST RUNNING</string>
+    <string name="start_run">Start a run</string>
+    <string name="start_walk">Start a walk</string>
+    <string name="start_run_subtitle">Track pace, distance and splits</string>
+    <string name="start_walk_subtitle">A relaxed outdoor walk</string>
+    <string name="history_title">Recent activity</string>
+    <string name="history_empty">No activities yet. Your first one starts above.</string>
+
+    <string name="activity_run">Run</string>
+    <string name="activity_walk">Walk</string>
+    <string name="label_distance">Distance</string>
+    <string name="label_duration">Duration</string>
+    <string name="label_pace">Pace</string>
+
+    <string name="status_acquiring">Finding GPS…</string>
+    <string name="status_recording">Recording</string>
+    <string name="status_paused">Paused</string>
+    <string name="status_finished">Finished</string>
+    <string name="status_discarded">Discarded</string>
+    <string name="signal_lost">GPS signal lost</string>
+
+    <string name="button_pause">Pause</string>
+    <string name="button_resume">Resume</string>
+    <string name="button_finish">Finish</string>
+    <string name="button_done">Done</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_leave">Leave</string>
+    <string name="button_stay">Stay</string>
+    <string name="button_open_settings">Open settings</string>
+    <string name="button_continue">Continue</string>
+    <string name="navigate_back">Back</string>
+
+    <string name="finish_title">Finish activity?</string>
+    <string name="finish_message">Your activity will be saved and recording will stop.</string>
+    <string name="leave_title">Recording in progress</string>
+    <string name="leave_message">Recording continues in the background if you leave this screen.</string>
+
+    <string name="permission_title">Location needed</string>
+    <string name="permission_message">Open Run needs precise location to measure distance and pace. Nothing leaves your device.</string>
+    <string name="permission_denied_title">Location permission denied</string>
+    <string name="permission_denied_message">Without location permission the app cannot record a route. You can grant it in system settings.</string>
+
+    <string name="notification_channel_name">Activity tracking</string>
+    <string name="notification_channel_description">Shows the ongoing activity while Open Run records your route.</string>
+    <string name="notification_recording_title">Run in progress</string>
+    <string name="notification_walk_title">Walk in progress</string>
+    <string name="notification_paused_title">Activity paused</string>
+    <string name="notification_acquiring_title">Finding GPS…</string>
+    <string name="notification_action_pause">Pause</string>
+    <string name="notification_action_resume">Resume</string>
+    <string name="notification_action_finish">Finish</string>
+    <string name="notification_text">%1$s · %2$s</string>
+    <string name="notification_paused_text">%1$s · paused</string>
+
+    <string name="summary_title">Activity saved</string>
+    <string name="summary_message">%1$s\n%2$s\n%3$s</string>
+    <string name="summary_distance">Distance: %1$s</string>
+    <string name="summary_duration">Duration: %1$s</string>
+    <string name="summary_pace">Average pace: %1$s</string>
+
+    <string name="error_title">Something went wrong</string>
+    <string name="error_location_unavailable">Could not start location updates. Check that location is enabled.</string>
+    <string name="error_permission">Location permission was lost. Recording stopped.</string>
+
+    <string name="accuracy_labeled">Accuracy: %1$s</string>
+    <string name="format_distance_km">%1$.2f km</string>
+    <string name="format_distance_m">%1$d m</string>
+    <string name="format_pace">%1$d:%2$02d /km</string>
+    <string name="format_accuracy">±%1$d m</string>
+    <string name="value_unknown">—</string>
+    <string name="time_zero">00:00</string>
+
+    <string name="detail_info_title">Activity details</string>
+    <string name="label_start_time">Start time</string>
+    <string name="label_end_time">End time</string>
+    <string name="label_total_duration">Total duration</string>
+    <string name="label_moving_time">Moving time</string>
+    <string name="label_elevation_gain">Elevation gain</string>
+    <string name="map_unavailable">Route map unavailable</string>
+    <string name="map_content_description">Route map</string>
+    <string name="map_attribution">© OpenStreetMap contributors</string>
+    <string name="marker_start">Start</string>
+    <string name="marker_end">End</string>
+    <string name="marker_start_short">S</string>
+    <string name="marker_end_short">E</string>
+    <string name="session_not_found">Activity not found</string>
+    <string name="format_elevation_m">%1$d m</string>
+
+    <string name="language_title">Language</string>
+    <string name="language_system">System default</string>
+    <string name="language_english">English</string>
+    <string name="language_portuguese">Português</string>
+    <string name="language_button">Change language</string>
+    <string name="language_code_en">EN</string>
+    <string name="language_code_pt">PT</string>
+
+    <string name="button_share">Share</string>
+    <string name="button_save_image">Save image</string>
+    <string name="share_chooser_title">Share activity</string>
+    <string name="share_preparing">Preparing image…</string>
+    <string name="share_saved">Image saved</string>
+    <string name="share_error">Could not create the image</string>
+    <string name="share_footer">Local-first</string>
+</resources>
