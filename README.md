@@ -8,7 +8,7 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the first working slice (`0.5.0`):
+This is the first working slice (`0.5.1`):
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
@@ -24,6 +24,18 @@ This is the first working slice (`0.5.0`):
 - English (default) and Portuguese (`values-pt`) resources
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
+
+New in 0.5.1:
+
+- Rounded route-map card with a loading state, adaptive height and a
+  recenter/fit-route control
+- Thicker route line with a light casing, rounded caps and circular start/end
+  markers; improved readability for long, zoomed-out routes
+- Delete button on every history row and swipe-left-to-delete, both with a
+  destructive-color confirmation dialog
+- Improved share-card route rendering for long routes and a cleaner fallback
+  map background
+- OpenStreetMap user agent with project contact information
 
 New in 0.5.0:
 
