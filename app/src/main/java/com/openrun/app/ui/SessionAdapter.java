@@ -23,10 +23,6 @@ public class SessionAdapter extends ListAdapter<SessionEntity, SessionAdapter.Se
         void onSessionClick(SessionEntity session);
     }
 
-    public interface OnSessionDeleteListener {
-        void onSessionDelete(SessionEntity session);
-    }
-
     private static final DiffUtil.ItemCallback<SessionEntity> DIFF =
             new DiffUtil.ItemCallback<SessionEntity>() {
                 @Override
@@ -43,13 +39,10 @@ public class SessionAdapter extends ListAdapter<SessionEntity, SessionAdapter.Se
             };
 
     private final OnSessionClickListener listener;
-    private final OnSessionDeleteListener deleteListener;
 
-    public SessionAdapter(OnSessionClickListener listener,
-                          OnSessionDeleteListener deleteListener) {
+    public SessionAdapter(OnSessionClickListener listener) {
         super(DIFF);
         this.listener = listener;
-        this.deleteListener = deleteListener;
     }
 
     @NonNull
@@ -98,11 +91,6 @@ public class SessionAdapter extends ListAdapter<SessionEntity, SessionAdapter.Se
         holder.binding.getRoot().setOnClickListener(v -> {
             if (listener != null) {
                 listener.onSessionClick(item);
-            }
-        });
-        holder.binding.buttonDelete.setOnClickListener(v -> {
-            if (deleteListener != null) {
-                deleteListener.onSessionDelete(item);
             }
         });
     }

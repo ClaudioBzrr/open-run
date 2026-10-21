@@ -132,24 +132,15 @@ public class SessionDetailActivity extends AppCompatActivity {
     }
 
     private void tintToolbarActions() {
-        // android:iconTint on a menu item is not applied by AppCompat's menu
-        // inflater, which left the delete icon black on the dark toolbar.
-        // Tint both actions explicitly so they stay legible in every theme.
+        // The delete action uses a self-colored icon (red circle + white
+        // glyph), so it stays readable even where AppCompat ignores menu item
+        // icon tint. The export icon still follows the current theme.
         MenuItem export = binding.toolbar.getMenu().findItem(R.id.action_export);
         if (export != null) {
             MenuItemCompat.setIconTintList(
                     export,
                     ColorStateList.valueOf(
                             ContextCompat.getColor(this, R.color.on_surface)
-                    )
-            );
-        }
-        MenuItem delete = binding.toolbar.getMenu().findItem(R.id.action_delete);
-        if (delete != null) {
-            MenuItemCompat.setIconTintList(
-                    delete,
-                    ColorStateList.valueOf(
-                            ContextCompat.getColor(this, R.color.error)
                     )
             );
         }

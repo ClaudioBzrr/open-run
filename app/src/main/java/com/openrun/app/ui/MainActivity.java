@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         repository = ((OpenRunApp) getApplication()).getRepository();
-        adapter = new SessionAdapter(this::openDetail, this::confirmDelete);
+        adapter = new SessionAdapter(this::openDetail);
         binding.recyclerSessions.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerSessions.setAdapter(adapter);
 

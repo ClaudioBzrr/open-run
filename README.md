@@ -8,14 +8,14 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the first working slice (`0.5.2`):
+This is the first working slice (`0.5.3`):
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
 - Live moving time, distance, current/average pace, accuracy and GPS-loss state
 - Pause / resume / finish
 - Room persistence for sessions and track points
-- History list on the home screen with a delete button and swipe-to-delete
+- History list on the home screen with swipe-to-delete
 - Activity detail screen with a rounded route map, start/end times and total duration
 - Pace and elevation performance charts
 - Delete activity action with confirmation
@@ -25,6 +25,14 @@ This is the first working slice (`0.5.2`):
 - English (default) and Portuguese (`values-pt`) resources
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
+
+New in 0.5.3:
+
+- Recent activity rows no longer show a trash button. Swipe a row to the left
+  to delete it; the confirmation dialog is unchanged.
+- The activity detail delete action now uses a high-contrast red-and-white
+  icon, so the trash glyph stays readable in dark mode without relying on menu
+  icon tinting.
 
 New in 0.5.2:
 

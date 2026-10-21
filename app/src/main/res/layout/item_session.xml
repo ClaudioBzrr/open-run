@@ -91,18 +91,5 @@
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
-
-        <ImageButton
-            android:id="@+id/button_delete"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/bg_circle"
-            android:backgroundTint="@color/error_container"
-            android:contentDescription="@string/delete_activity"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:padding="10dp"
-            android:src="@drawable/ic_delete"
-            app:tint="@color/error" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
