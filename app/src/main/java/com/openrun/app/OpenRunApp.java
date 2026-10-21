@@ -53,17 +53,6 @@ public class OpenRunApp extends Application {
         AppDatabase database = AppDatabase.getInstance(this);
         repository = new SessionRepository(database);
         trackingStateHolder = new TrackingStateHolder();
-
-        // If the process died while a session was active, the service is gone
-        // with it. Preserve the row for a future recovery screen instead of
-        // leaving it in an "active" state forever.
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            try {
-                repository.markActiveSessionsInterrupted();
-            } catch (RuntimeException ignored) {
-                // A failed cleanup must not prevent the app from starting.
-            }
-        });
     }
 
     public static OpenRunApp get() {

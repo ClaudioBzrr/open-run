@@ -27,6 +27,9 @@ public final class TrackFilter {
                 return false;
             }
         }
+        if (fix.hasSpeed() && fix.getSpeedMps() > config.getMaxSpeedMps()) {
+            return false;
+        }
         if (lastAccepted == null) {
             lastAccepted = fix;
             return true;
@@ -58,6 +61,13 @@ public final class TrackFilter {
 
     public void reset() {
         lastAccepted = null;
+    }
+
+    /**
+     * Restores the filter anchor when resuming a persisted session.
+     */
+    public void restoreLast(RawFix fix) {
+        lastAccepted = fix;
     }
 
     public RawFix getLastAccepted() {

@@ -34,20 +34,25 @@ import com.google.android.gms.location.Priority;
 import com.openrun.app.OpenRunApp;
 import com.openrun.app.R;
 import com.openrun.app.data.AppDatabase;
+import com.openrun.app.data.PauseEntity;
 import com.openrun.app.data.PointEntity;
 import com.openrun.app.data.SessionEntity;
 import com.openrun.app.data.SessionRepository;
+import com.openrun.app.data.SplitEntity;
 import com.openrun.app.ui.RecordActivity;
 import com.openrun.app.util.Formatters;
 import com.openrun.core.model.ActivityType;
 import com.openrun.core.model.RawFix;
 import com.openrun.core.model.RecordingConfig;
 import com.openrun.core.model.SessionSummary;
+import com.openrun.core.model.Split;
 import com.openrun.core.model.TrackPoint;
 import com.openrun.core.model.TrackingSnapshot;
 import com.openrun.core.model.TrackingState;
 import com.openrun.core.stats.TrackingEngine;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class TrackingService extends Service {
@@ -64,6 +69,7 @@ public class TrackingService extends Service {
 
     private SessionRepository repository;
     private TrackingStateHolder stateHolder;
+    private BarometerTracker barometer;
     private volatile TrackingEngine engine;
     private volatile String sessionId;
     private volatile boolean foregroundStarted;
@@ -71,6 +77,7 @@ public class TrackingService extends Service {
     private volatile boolean finishing;
     private long lastSummaryPersistElapsedMs;
     private volatile String lastNotificationSignature;
+    private int persistedSplitCount;
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -95,6 +102,7 @@ public class TrackingService extends Service {
         super.onCreate();
         repository = OpenRunApp.get().getRepository();
         stateHolder = OpenRunApp.get().getTrackingStateHolder();
+        barometer = new BarometerTracker(this);
         createNotificationChannel();
 
         try {
@@ -131,15 +139,18 @@ public class TrackingService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null || intent.getAction() == null) {
-            if (engine == null || !engine.isActive()) {
-                stopSelf();
-            }
-            return START_NOT_STICKY;
+            recoverSession();
+            return engine != null && engine.isActive()
+                    ? START_STICKY
+                    : START_NOT_STICKY;
         }
 
         switch (intent.getAction()) {
             case TrackingContract.ACTION_START:
                 handleStart(intent);
+                break;
+            case TrackingContract.ACTION_RECOVER:
+                recoverSession();
                 break;
             case TrackingContract.ACTION_PAUSE:
                 handlePause();
@@ -156,7 +167,9 @@ public class TrackingService extends Service {
             default:
                 break;
         }
-        return START_NOT_STICKY;
+        return engine != null && engine.isActive()
+                ? START_STICKY
+                : START_NOT_STICKY;
     }
 
     @Nullable
@@ -185,6 +198,10 @@ public class TrackingService extends Service {
         finishing = false;
         lastSummaryPersistElapsedMs = 0;
         lastNotificationSignature = null;
+        persistedSplitCount = 0;
+        if (barometer != null) {
+            barometer.start();
+        }
 
         final SessionEntity session = new SessionEntity();
         session.id = sessionId;
@@ -279,12 +296,18 @@ public class TrackingService extends Service {
             return;
         }
 
-        double altitude = Double.NaN;
+        double gpsAltitude = Double.NaN;
         if (location.hasAltitude()
                 && (!location.hasVerticalAccuracy()
                 || location.getVerticalAccuracyMeters() <= 30.0f)) {
-            altitude = location.getAltitude();
+            gpsAltitude = location.getAltitude();
         }
+        double barometricAltitude = barometer != null
+                ? barometer.altitudeWithGpsCalibration(gpsAltitude)
+                : Double.NaN;
+        double altitude = !Double.isNaN(barometricAltitude)
+                ? barometricAltitude
+                : gpsAltitude;
 
         RawFix fix = new RawFix(
                 location.getLatitude(),
@@ -301,10 +324,24 @@ public class TrackingService extends Service {
                 ? fixElapsedMs
                 : SystemClock.elapsedRealtime();
 
+        TrackingState beforeState = current.getState();
         int before = current.getPoints().size();
         TrackingSnapshot snapshot = current.onFix(fix, nowElapsedMs);
         if (snapshot == null) {
             return;
+        }
+
+        if (beforeState == TrackingState.RECORDING
+                && snapshot.getState() == TrackingState.PAUSED) {
+            recordPauseStart(
+                    current.getPausedAtElapsedMs() >= 0
+                            ? current.getPausedAtElapsedMs()
+                            : nowElapsedMs,
+                    snapshot.isAutoPaused()
+            );
+        } else if (beforeState == TrackingState.PAUSED
+                && snapshot.getState() == TrackingState.RECORDING) {
+            recordPauseEnd(nowElapsedMs);
         }
 
         if (current.getPoints().size() > before) {
@@ -321,6 +358,7 @@ public class TrackingService extends Service {
                 });
             }
             maybePersistSummary(snapshot);
+            persistNewSplits(current);
         }
 
         stateHolder.postSnapshot(snapshot);
@@ -333,11 +371,13 @@ public class TrackingService extends Service {
             stopSelf();
             return;
         }
-        current.pause(SystemClock.elapsedRealtime());
+        long nowElapsed = SystemClock.elapsedRealtime();
+        current.pause(nowElapsed);
         TrackingSnapshot snapshot = current.snapshot(
-                SystemClock.elapsedRealtime(),
+                nowElapsed,
                 System.currentTimeMillis()
         );
+        recordPauseStart(nowElapsed, false);
         stateHolder.postSnapshot(snapshot);
         persistSummary(snapshot);
         updateNotification(snapshot);
@@ -349,9 +389,11 @@ public class TrackingService extends Service {
             stopSelf();
             return;
         }
-        current.resume(SystemClock.elapsedRealtime());
+        long nowElapsed = SystemClock.elapsedRealtime();
+        recordPauseEnd(nowElapsed);
+        current.resume(nowElapsed);
         TrackingSnapshot snapshot = current.snapshot(
-                SystemClock.elapsedRealtime(),
+                nowElapsed,
                 System.currentTimeMillis()
         );
         stateHolder.postSnapshot(snapshot);
@@ -374,6 +416,8 @@ public class TrackingService extends Service {
 
         long nowElapsedMs = SystemClock.elapsedRealtime();
         long nowEpochMs = System.currentTimeMillis();
+        recordPauseEnd(nowElapsedMs);
+        persistNewSplits(current);
         SessionSummary summary = current.finish(nowElapsedMs, nowEpochMs);
         if (summary == null) {
             stopTracking(true);
@@ -389,6 +433,13 @@ public class TrackingService extends Service {
                     SessionEntity session = repository.getSession(id);
                     if (session != null) {
                         session.state = TrackingState.FINISHED.name();
+                        TrackingEngine finishedEngine = engine;
+                        if (finishedEngine != null) {
+                            session.recordingStartedElapsed =
+                                    finishedEngine.getRecordingStartElapsedMs();
+                            session.recordingStartedAt =
+                                    finishedEngine.getRecordingStartEpochMs();
+                        }
                         session.endedAt = summary.getEndedAtEpochMs();
                         session.movingMs = summary.getMovingTimeMs();
                         session.pausedMs = summary.getPausedTimeMs();
@@ -436,6 +487,195 @@ public class TrackingService extends Service {
         persistSummary(snapshot);
     }
 
+    private void recordPauseStart(long startedElapsedMs, boolean autoPause) {
+        final String id = sessionId;
+        if (id == null) {
+            return;
+        }
+        PauseEntity pause = new PauseEntity();
+        pause.sessionId = id;
+        pause.startedElapsedMs = startedElapsedMs;
+        pause.startedAtEpochMs = System.currentTimeMillis()
+                - Math.max(0, SystemClock.elapsedRealtime() - startedElapsedMs);
+        pause.autoPause = autoPause;
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                repository.insertPause(pause);
+            } catch (RuntimeException ignored) {
+            }
+        });
+    }
+
+    private void recordPauseEnd(long endedElapsedMs) {
+        final String id = sessionId;
+        if (id == null) {
+            return;
+        }
+        final long endedAt = System.currentTimeMillis();
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                repository.finishOpenPauses(id, endedElapsedMs, endedAt);
+            } catch (RuntimeException ignored) {
+            }
+        });
+    }
+
+    private void persistNewSplits(TrackingEngine current) {
+        if (current == null) {
+            return;
+        }
+        List<Split> splits = current.getSplits();
+        if (splits.size() <= persistedSplitCount) {
+            return;
+        }
+        final String id = sessionId;
+        if (id == null) {
+            return;
+        }
+        List<SplitEntity> entities = new ArrayList<>();
+        for (int i = persistedSplitCount; i < splits.size(); i++) {
+            Split split = splits.get(i);
+            SplitEntity entity = new SplitEntity();
+            entity.sessionId = id;
+            entity.splitIndex = split.getIndex();
+            entity.distanceM = split.getDistanceMeters();
+            entity.durationMs = split.getDurationMs();
+            entity.paceSecPerKm = split.getPaceSecPerKm();
+            entities.add(entity);
+        }
+        persistedSplitCount = splits.size();
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                repository.insertSplits(entities);
+            } catch (RuntimeException ignored) {
+            }
+        });
+    }
+
+    private void recoverSession() {
+        if (engine != null && engine.isActive()) {
+            return;
+        }
+        if (!foregroundStarted) {
+            try {
+                startForegroundCompat(buildRecoveryNotification());
+                acquireWakeLock();
+            } catch (RuntimeException error) {
+                stopSelf();
+                return;
+            }
+        }
+        final TrackingEngine[] loadedEngine = new TrackingEngine[1];
+        final int[] loadedSplitCount = new int[1];
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                SessionEntity session = repository.findUnfinishedSession();
+                if (session == null) {
+                    mainHandler.post(() -> stopTracking(true));
+                    return;
+                }
+                if (session.bootCount != getBootCount()
+                        || "INTERRUPTED".equals(session.state)
+                        || "FINISHED".equals(session.state)
+                        || "DISCARDED".equals(session.state)) {
+                    mainHandler.post(() -> stopTracking(true));
+                    return;
+                }
+                List<PointEntity> pointEntities = repository.loadPoints(session.id);
+                List<SplitEntity> splitEntities = repository.loadSplits(session.id);
+                PauseEntity openPause = repository.findOpenPause(session.id);
+
+                List<TrackPoint> points = new ArrayList<>(pointEntities.size());
+                for (PointEntity point : pointEntities) {
+                    points.add(new TrackPoint(
+                            point.seq,
+                            point.lat,
+                            point.lon,
+                            point.altitude == null ? Double.NaN : point.altitude,
+                            point.accuracy == null ? Double.NaN : point.accuracy,
+                            point.speed == null ? Double.NaN : point.speed,
+                            point.bearing == null ? Double.NaN : point.bearing,
+                            point.timestamp,
+                            point.elapsedMs,
+                            point.movingElapsedMs
+                    ));
+                }
+                List<Split> splits = new ArrayList<>(splitEntities.size());
+                for (SplitEntity split : splitEntities) {
+                    splits.add(new Split(
+                            split.splitIndex,
+                            split.distanceM,
+                            split.durationMs
+                    ));
+                }
+
+                long nowElapsed = SystemClock.elapsedRealtime();
+                TrackingState restoredState = TrackingState.valueOf(session.state);
+                TrackingEngine restored = new TrackingEngine();
+                restored.restore(
+                        RecordingConfig.defaults(ActivityType.fromKey(session.type)),
+                        points,
+                        splits,
+                        restoredState,
+                        session.startedElapsed,
+                        session.startedAt,
+                        session.recordingStartedElapsed,
+                        session.recordingStartedAt,
+                        session.pausedMs,
+                        session.distanceM,
+                        session.elevationGainM,
+                        session.elevationLossM,
+                        nowElapsed,
+                        openPause != null && openPause.autoPause
+                );
+                loadedEngine[0] = restored;
+                loadedSplitCount[0] = splitEntities.size();
+                final SessionEntity recoveredSession = session;
+                mainHandler.post(() -> installRecoveredSession(
+                        recoveredSession,
+                        loadedEngine[0],
+                        loadedSplitCount[0]
+                ));
+            } catch (RuntimeException error) {
+                mainHandler.post(() -> stopTracking(true));
+            }
+        });
+    }
+
+    private void installRecoveredSession(SessionEntity session,
+                                         TrackingEngine restored,
+                                         int splitCount) {
+        if (restored == null) {
+            stopSelf();
+            return;
+        }
+        sessionId = session.id;
+        engine = restored;
+        finishing = false;
+        lastSummaryPersistElapsedMs = 0;
+        lastNotificationSignature = null;
+        persistedSplitCount = splitCount;
+        if (barometer != null) {
+            barometer.start();
+        }
+        TrackingSnapshot initial = restored.snapshot(
+                SystemClock.elapsedRealtime(),
+                System.currentTimeMillis()
+        );
+        try {
+            startForegroundCompat(buildNotification(initial));
+        } catch (RuntimeException error) {
+            stateHolder.postEvent(TrackingEvent.error(TrackingEvent.Type.ERROR_LOCATION));
+            stopSelf();
+            return;
+        }
+        acquireWakeLock();
+        stateHolder.postSnapshot(initial);
+        if (startLocationUpdates()) {
+            handler.post(tick);
+        }
+    }
+
     private void persistSummary(TrackingSnapshot snapshot) {
         final String id = sessionId;
         if (id == null || snapshot == null) {
@@ -448,6 +688,13 @@ public class TrackingService extends Service {
                     return;
                 }
                 session.state = snapshot.getState().name();
+                TrackingEngine currentEngine = engine;
+                if (currentEngine != null) {
+                    session.recordingStartedElapsed =
+                            currentEngine.getRecordingStartElapsedMs();
+                    session.recordingStartedAt =
+                            currentEngine.getRecordingStartEpochMs();
+                }
                 session.movingMs = snapshot.getMovingTimeMs();
                 session.pausedMs = snapshot.getPausedTimeMs();
                 session.distanceM = snapshot.getDistanceMeters();
@@ -497,6 +744,9 @@ public class TrackingService extends Service {
             locationUpdatesStarted = false;
         }
         releaseWakeLock();
+        if (barometer != null) {
+            barometer.stop();
+        }
         if (foregroundStarted) {
             if (removeNotification) {
                 ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
@@ -549,6 +799,21 @@ public class TrackingService extends Service {
         if (manager != null) {
             manager.notify(NOTIFICATION_ID, buildNotification(snapshot));
         }
+    }
+
+    private Notification buildRecoveryNotification() {
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shoe_small)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.notification_recovering))
+                .setContentIntent(contentIntent())
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .setForegroundServiceBehavior(
+                        NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
+                )
+                .build();
     }
 
     private Notification buildNotification(TrackingSnapshot snapshot) {
@@ -630,6 +895,7 @@ public class TrackingService extends Service {
 
     private PendingIntent contentIntent() {
         Intent intent = new Intent(this, RecordActivity.class)
+                .putExtra(RecordActivity.EXTRA_RECOVER, true)
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(
                 this,
@@ -677,6 +943,9 @@ public class TrackingService extends Service {
             locationUpdatesStarted = false;
         }
         releaseWakeLock();
+        if (barometer != null) {
+            barometer.stop();
+        }
         if (handlerThread != null) {
             handlerThread.quitSafely();
         }

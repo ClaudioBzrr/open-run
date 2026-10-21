@@ -36,10 +36,12 @@ import java.util.Map;
 
 public class RecordActivity extends AppCompatActivity {
     public static final String EXTRA_TYPE = "com.openrun.app.extra.ACTIVITY_TYPE";
+    public static final String EXTRA_RECOVER = "com.openrun.app.extra.RECOVER";
 
     private ActivityRecordBinding binding;
     private TrackingStateHolder stateHolder;
     private ActivityType requestedType;
+    private boolean recoverMode;
     private boolean startRequested;
     private boolean pendingStart;
     private boolean summaryShown;
@@ -58,6 +60,7 @@ public class RecordActivity extends AppCompatActivity {
 
         stateHolder = ((OpenRunApp) getApplication()).getTrackingStateHolder();
         requestedType = ActivityType.fromKey(getIntent().getStringExtra(EXTRA_TYPE));
+        recoverMode = getIntent().getBooleanExtra(EXTRA_RECOVER, false);
         binding.toolbar.setTitle(titleRes(requestedType));
         binding.toolbar.setNavigationContentDescription(R.string.navigate_back);
         binding.toolbar.setNavigationOnClickListener(v -> handleBack());
@@ -151,7 +154,11 @@ public class RecordActivity extends AppCompatActivity {
         }
         startRequested = true;
         try {
-            TrackingController.start(this, requestedType);
+            if (recoverMode) {
+                TrackingController.recover(this);
+            } else {
+                TrackingController.start(this, requestedType);
+            }
         } catch (RuntimeException error) {
             startRequested = false;
             showError(R.string.error_location_unavailable);

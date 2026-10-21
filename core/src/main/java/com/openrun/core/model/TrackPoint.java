@@ -13,6 +13,7 @@ public final class TrackPoint {
     private final double bearingDegrees;
     private final long timestampEpochMs;
     private final long elapsedMs;
+    private final long movingElapsedMs;
 
     public TrackPoint(int seq,
                       double latitude,
@@ -23,6 +24,30 @@ public final class TrackPoint {
                       double bearingDegrees,
                       long timestampEpochMs,
                       long elapsedMs) {
+        this(
+                seq,
+                latitude,
+                longitude,
+                altitudeMeters,
+                accuracyMeters,
+                speedMps,
+                bearingDegrees,
+                timestampEpochMs,
+                elapsedMs,
+                elapsedMs
+        );
+    }
+
+    public TrackPoint(int seq,
+                      double latitude,
+                      double longitude,
+                      double altitudeMeters,
+                      double accuracyMeters,
+                      double speedMps,
+                      double bearingDegrees,
+                      long timestampEpochMs,
+                      long elapsedMs,
+                      long movingElapsedMs) {
         this.seq = seq;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -32,6 +57,7 @@ public final class TrackPoint {
         this.bearingDegrees = bearingDegrees;
         this.timestampEpochMs = timestampEpochMs;
         this.elapsedMs = elapsedMs;
+        this.movingElapsedMs = movingElapsedMs;
     }
 
     public int getSeq() {
@@ -68,5 +94,9 @@ public final class TrackPoint {
 
     public long getElapsedMs() {
         return elapsedMs;
+    }
+
+    public long getMovingElapsedMs() {
+        return movingElapsedMs;
     }
 }

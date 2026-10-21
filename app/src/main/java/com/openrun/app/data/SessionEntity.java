@@ -27,6 +27,12 @@ public class SessionEntity {
     @ColumnInfo(name = "started_elapsed")
     public long startedElapsed;
 
+    @ColumnInfo(name = "recording_started_elapsed")
+    public long recordingStartedElapsed;
+
+    @ColumnInfo(name = "recording_started_at")
+    public long recordingStartedAt;
+
     @ColumnInfo(name = "boot_count")
     public int bootCount;
 

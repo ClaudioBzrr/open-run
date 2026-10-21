@@ -50,6 +50,7 @@
     <string name="notification_recording_title">Corrida em andamento</string>
     <string name="notification_walk_title">Caminhada em andamento</string>
     <string name="notification_paused_title">Atividade pausada</string>
+    <string name="notification_recovering">Recuperando atividade...</string>
     <string name="notification_acquiring_title">Buscando GPS…</string>
     <string name="notification_action_pause">Pausar</string>
     <string name="notification_action_resume">Retomar</string>
@@ -109,6 +110,8 @@
     <string name="share_footer">Sem nuvem</string>
 
     <string name="performance_title">Desempenho</string>
+    <string name="splits_title">Parciais</string>
+    <string name="split_km">%1$d km</string>
     <string name="chart_pace_title">Ritmo</string>
     <string name="chart_elevation_title">Elevação</string>
     <string name="chart_no_data">Dados insuficientes</string>
@@ -121,10 +124,32 @@
     <string name="activity_deleted">Atividade excluída</string>
     <string name="delete_error">Não foi possível excluir a atividade</string>
 
+    <string name="backup_title">Backup criptografado</string>
+    <string name="backup_subtitle">Exporte ou restaure um arquivo .runbackup local. Sua senha nunca é armazenada.</string>
+    <string name="backup_export">Exportar</string>
+    <string name="backup_import">Restaurar</string>
+    <string name="backup_passphrase_title">Senha do backup</string>
+    <string name="backup_passphrase_message">Use pelo menos 8 caracteres. A senha não é armazenada e não pode ser recuperada.</string>
+    <string name="backup_passphrase_hint">Senha</string>
+    <string name="backup_passphrase_short">Use pelo menos 8 caracteres</string>
+    <string name="backup_exported">Backup criptografado exportado</string>
+    <string name="backup_export_error">Não foi possível exportar o backup</string>
+    <string name="backup_imported">%1$d atividades restauradas</string>
+    <string name="backup_import_error">Não foi possível restaurar o backup. Confira a senha e o arquivo.</string>
+
+    <string name="recovery_title">Atividade não finalizada</string>
+    <string name="recovery_message">%1$s · %2$s\nDistância: %3$s</string>
+    <string name="recovery_resume">Retomar</string>
+    <string name="recovery_save">Finalizar e salvar</string>
+    <string name="recovery_discard">Descartar</string>
+    <string name="recovery_saved">Atividade salva</string>
+
     <string name="export_activity">Exportar</string>
     <string name="export_title">Exportar atividade</string>
     <string name="export_pdf">Relatório em PDF</string>
     <string name="export_xlsx">Planilha Excel (.xlsx)</string>
+    <string name="export_gpx">Percurso GPX (.gpx)</string>
+    <string name="export_fit">Garmin FIT (.fit)</string>
     <string name="export_saved">Atividade exportada</string>
     <string name="export_error">Não foi possível exportar a atividade</string>
     <string name="export_report_title">Relatório da atividade</string>

@@ -10,6 +10,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -27,15 +29,20 @@ import com.openrun.app.data.AppDatabase;
 import com.openrun.app.data.PointEntity;
 import com.openrun.app.data.SessionEntity;
 import com.openrun.app.data.SessionRepository;
+import com.openrun.app.data.SplitEntity;
 import com.openrun.app.databinding.ActivitySessionDetailBinding;
 import com.openrun.app.util.Formatters;
 import com.openrun.app.util.PerformanceSeries;
 import com.openrun.app.util.PerformanceSeriesBuilder;
+import com.openrun.app.util.SessionFitWriter;
+import com.openrun.app.util.SessionGpxWriter;
 import com.openrun.app.util.SessionPdfWriter;
 import com.openrun.app.util.SessionXlsxWriter;
 import com.openrun.app.util.ShareCardGenerator;
 import com.openrun.core.model.ActivityType;
 import com.openrun.core.stats.GeoMath;
+import com.openrun.core.stats.RouteSmoother;
+import com.openrun.core.model.TrackPoint;
 
 import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
@@ -64,6 +71,8 @@ public class SessionDetailActivity extends AppCompatActivity {
 
     private static final int EXPORT_PDF = 1;
     private static final int EXPORT_XLSX = 2;
+    private static final int EXPORT_GPX = 3;
+    private static final int EXPORT_FIT = 4;
 
     private final ExecutorService shareExecutor = Executors.newSingleThreadExecutor();
     private final ActivityResultLauncher<String> saveImageLauncher =
@@ -84,12 +93,23 @@ public class SessionDetailActivity extends AppCompatActivity {
                     ),
                     uri -> onExportDestinationSelected(uri, EXPORT_XLSX)
             );
+    private final ActivityResultLauncher<String> exportGpxLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.CreateDocument("application/gpx+xml"),
+                    uri -> onExportDestinationSelected(uri, EXPORT_GPX)
+            );
+    private final ActivityResultLauncher<String> exportFitLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.CreateDocument("application/vnd.ant.fit"),
+                    uri -> onExportDestinationSelected(uri, EXPORT_FIT)
+            );
 
     private ActivitySessionDetailBinding binding;
     private SessionRepository repository;
     private String sessionId;
     private SessionEntity currentSession;
     private List<PointEntity> currentPoints = Collections.emptyList();
+    private List<SplitEntity> currentSplits = Collections.emptyList();
     private List<GeoPoint> routePoints = Collections.emptyList();
     private File pendingImageFile;
     private boolean shareBusy;
@@ -152,15 +172,28 @@ public class SessionDetailActivity extends AppCompatActivity {
         }
         String[] options = {
                 getString(R.string.export_pdf),
-                getString(R.string.export_xlsx)
+                getString(R.string.export_xlsx),
+                getString(R.string.export_gpx),
+                getString(R.string.export_fit)
         };
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.export_title)
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        exportPdfLauncher.launch(exportFileName("pdf"));
-                    } else {
-                        exportXlsxLauncher.launch(exportFileName("xlsx"));
+                    switch (which) {
+                        case 0:
+                            exportPdfLauncher.launch(exportFileName("pdf"));
+                            break;
+                        case 1:
+                            exportXlsxLauncher.launch(exportFileName("xlsx"));
+                            break;
+                        case 2:
+                            exportGpxLauncher.launch(exportFileName("gpx"));
+                            break;
+                        case 3:
+                            exportFitLauncher.launch(exportFileName("fit"));
+                            break;
+                        default:
+                            break;
                     }
                 })
                 .setNegativeButton(R.string.button_cancel, null)
@@ -192,6 +225,7 @@ public class SessionDetailActivity extends AppCompatActivity {
         }
         final SessionEntity session = currentSession;
         final List<PointEntity> points = new ArrayList<>(currentPoints);
+        final List<SplitEntity> splits = new ArrayList<>(currentSplits);
         setBusy(true);
 
         shareExecutor.execute(() -> {
@@ -201,8 +235,33 @@ public class SessionDetailActivity extends AppCompatActivity {
                 }
                 if (format == EXPORT_PDF) {
                     SessionPdfWriter.write(this, output, session, points);
-                } else {
+                } else if (format == EXPORT_XLSX) {
                     SessionXlsxWriter.write(this, output, session, points);
+                } else if (format == EXPORT_GPX) {
+                    SessionGpxWriter.write(output, session, points);
+                } else if (format == EXPORT_FIT) {
+                    File temporary = File.createTempFile(
+                            "openrun-export",
+                            ".fit",
+                            getCacheDir()
+                    );
+                    try {
+                        SessionFitWriter.write(temporary, session, points, splits);
+                        try (InputStream input = new FileInputStream(temporary)) {
+                            byte[] buffer = new byte[16 * 1024];
+                            int read;
+                            while ((read = input.read(buffer)) > 0) {
+                                output.write(buffer, 0, read);
+                            }
+                        }
+                    } finally {
+                        if (temporary.exists()) {
+                            //noinspection ResultOfMethodCallIgnored
+                            temporary.delete();
+                        }
+                    }
+                } else {
+                    throw new IOException("Unknown export format");
                 }
                 output.flush();
                 runOnUiThread(() -> {
@@ -246,6 +305,7 @@ public class SessionDetailActivity extends AppCompatActivity {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             SessionEntity session = repository.getSession(id);
             List<PointEntity> points = repository.loadPoints(id);
+            List<SplitEntity> splits = repository.loadSplits(id);
             runOnUiThread(() -> {
                 if (isFinishing() || isDestroyed()) {
                     return;
@@ -259,6 +319,9 @@ public class SessionDetailActivity extends AppCompatActivity {
                     finish();
                     return;
                 }
+                currentSplits = splits == null
+                        ? Collections.emptyList()
+                        : splits;
                 bind(session, points);
             });
         });
@@ -316,6 +379,60 @@ public class SessionDetailActivity extends AppCompatActivity {
         );
 
         renderRoute(points);
+        renderSplits();
+    }
+
+    private void renderSplits() {
+        binding.splitsContainer.removeAllViews();
+        if (currentSplits == null || currentSplits.isEmpty()) {
+            binding.cardSplits.setVisibility(View.GONE);
+            return;
+        }
+        binding.cardSplits.setVisibility(View.VISIBLE);
+        int padding = Math.round(8 * getResources().getDisplayMetrics().density);
+        for (SplitEntity split : currentSplits) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setPadding(0, padding, 0, padding);
+
+            TextView label = new TextView(this);
+            label.setText(getString(R.string.split_km, split.splitIndex));
+            label.setTextSize(14);
+            label.setTextColor(ContextCompat.getColor(this, R.color.on_surface));
+            label.setTypeface(null, android.graphics.Typeface.BOLD);
+            label.setLayoutParams(new LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    0.8f
+            ));
+
+            TextView duration = new TextView(this);
+            duration.setText(Formatters.duration(split.durationMs));
+            duration.setTextSize(14);
+            duration.setTextColor(ContextCompat.getColor(this, R.color.on_surface_variant));
+            duration.setGravity(android.view.Gravity.END);
+            duration.setLayoutParams(new LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+            ));
+
+            TextView pace = new TextView(this);
+            pace.setText(Formatters.pace(this, split.paceSecPerKm));
+            pace.setTextSize(14);
+            pace.setTextColor(ContextCompat.getColor(this, R.color.brand_primary));
+            pace.setGravity(android.view.Gravity.END);
+            pace.setLayoutParams(new LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+            ));
+
+            row.addView(label);
+            row.addView(duration);
+            row.addView(pace);
+            binding.splitsContainer.addView(row);
+        }
     }
 
     private void confirmDelete() {
@@ -528,6 +645,7 @@ public class SessionDetailActivity extends AppCompatActivity {
         }
 
         List<GeoPoint> route = new ArrayList<>(points.size());
+        List<TrackPoint> accepted = new ArrayList<>(points.size());
         for (PointEntity point : points) {
             if (point == null
                     || Double.isNaN(point.lat)
@@ -536,7 +654,21 @@ public class SessionDetailActivity extends AppCompatActivity {
                     || Double.isInfinite(point.lon)) {
                 continue;
             }
-            route.add(new GeoPoint(point.lat, point.lon));
+            accepted.add(new TrackPoint(
+                    point.seq,
+                    point.lat,
+                    point.lon,
+                    point.altitude == null ? Double.NaN : point.altitude,
+                    point.accuracy == null ? Double.NaN : point.accuracy,
+                    point.speed == null ? Double.NaN : point.speed,
+                    point.bearing == null ? Double.NaN : point.bearing,
+                    point.timestamp,
+                    point.elapsedMs,
+                    point.movingElapsedMs
+            ));
+        }
+        for (TrackPoint point : RouteSmoother.smooth(accepted)) {
+            route.add(new GeoPoint(point.getLatitude(), point.getLongitude()));
         }
 
         if (route.isEmpty()) {

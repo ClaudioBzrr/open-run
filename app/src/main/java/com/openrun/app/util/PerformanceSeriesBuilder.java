@@ -51,6 +51,7 @@ public final class PerformanceSeriesBuilder {
 
         elapsed[0] = Math.max(0, valid.get(0).elapsedMs);
         distance[0] = 0;
+        boolean hasMovingElapsed = valid.get(0).movingElapsedMs > 0;
         for (int i = 1; i < count; i++) {
             PointEntity previous = valid.get(i - 1);
             PointEntity current = valid.get(i);
@@ -60,7 +61,11 @@ public final class PerformanceSeriesBuilder {
                     current.lat,
                     current.lon
             );
-            elapsed[i] = Math.max(elapsed[i - 1], Math.max(0, current.elapsedMs));
+            long pointElapsed = current.movingElapsedMs > 0
+                    ? current.movingElapsedMs
+                    : current.elapsedMs;
+            elapsed[i] = Math.max(elapsed[i - 1], Math.max(0, pointElapsed));
+            hasMovingElapsed = hasMovingElapsed || current.movingElapsedMs > 0;
         }
 
         for (int i = 0; i < count; i++) {
@@ -77,12 +82,11 @@ public final class PerformanceSeriesBuilder {
         }
 
         long finalElapsed = elapsed[count - 1];
-        double movingScale = 1.0d;
-        if (session.movingMs > 0 && finalElapsed > 0) {
-            movingScale = session.movingMs / (double) finalElapsed;
-        }
-        for (int i = 0; i < count; i++) {
-            elapsed[i] = Math.round(elapsed[i] * movingScale);
+        if (!hasMovingElapsed && session.movingMs > 0 && finalElapsed > 0) {
+            double movingScale = session.movingMs / (double) finalElapsed;
+            for (int i = 0; i < count; i++) {
+                elapsed[i] = Math.round(elapsed[i] * movingScale);
+            }
         }
 
         ActivityType type = ActivityType.fromKey(session.type);

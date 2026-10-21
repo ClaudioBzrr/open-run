@@ -60,6 +60,9 @@ public class PointEntity {
     @ColumnInfo(name = "elapsed_ms")
     public long elapsedMs;
 
+    @ColumnInfo(name = "moving_elapsed_ms")
+    public long movingElapsedMs;
+
     public PointEntity() {
     }
 
@@ -75,6 +78,7 @@ public class PointEntity {
         entity.bearing = finiteOrNull(point.getBearingDegrees());
         entity.timestamp = point.getTimestampEpochMs();
         entity.elapsedMs = point.getElapsedMs();
+        entity.movingElapsedMs = point.getMovingElapsedMs();
         return entity;
     }
 

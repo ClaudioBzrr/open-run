@@ -2,6 +2,22 @@ plugins {
     id 'com.android.application'
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+def releaseStoreFile = keystoreProperties.getProperty('storeFile')
+        ?: System.getenv('OPENRUN_KEYSTORE_FILE')
+def releaseStorePassword = keystoreProperties.getProperty('storePassword')
+        ?: System.getenv('OPENRUN_KEYSTORE_PASSWORD')
+def releaseKeyAlias = keystoreProperties.getProperty('keyAlias')
+        ?: System.getenv('OPENRUN_KEY_ALIAS')
+def releaseKeyPassword = keystoreProperties.getProperty('keyPassword')
+        ?: System.getenv('OPENRUN_KEY_PASSWORD')
+def hasReleaseSigning = releaseStoreFile && releaseStorePassword
+        && releaseKeyAlias && releaseKeyPassword
+
 android {
     namespace 'com.openrun.app'
     compileSdk 35
@@ -10,8 +26,32 @@ android {
         applicationId "com.openrun.app"
         minSdk 26
         targetSdk 34
-        versionCode 8
-        versionName "0.5.3"
+        versionCode 9
+        versionName "0.6.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                    'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
     }
 
     buildFeatures {
@@ -42,6 +82,13 @@ dependencies {
 
     implementation 'com.google.android.gms:play-services-location:21.3.0'
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
+    implementation 'com.garmin:fit:21.176.0'
 
     testImplementation 'junit:junit:4.13.2'
+
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    androidTestImplementation 'androidx.room:room-testing:2.6.1'
 }

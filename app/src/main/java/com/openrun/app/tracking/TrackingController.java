@@ -18,6 +18,12 @@ public final class TrackingController {
         ContextCompat.startForegroundService(context, intent);
     }
 
+    public static void recover(Context context) {
+        Intent intent = new Intent(context, TrackingService.class)
+                .setAction(TrackingContract.ACTION_RECOVER);
+        ContextCompat.startForegroundService(context, intent);
+    }
+
     public static void pause(Context context) {
         send(context, TrackingContract.ACTION_PAUSE);
     }

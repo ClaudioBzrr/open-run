@@ -16,7 +16,9 @@ import com.openrun.app.R;
 import com.openrun.app.data.PointEntity;
 import com.openrun.app.data.SessionEntity;
 import com.openrun.core.model.ActivityType;
+import com.openrun.core.model.TrackPoint;
 import com.openrun.core.stats.GeoMath;
+import com.openrun.core.stats.RouteSmoother;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -197,6 +199,7 @@ public final class ShareCardGenerator {
             return;
         }
 
+        points = smoothForDisplay(points);
         Projection projection = chooseProjection(points);
         if (projection == null) {
             canvas.restore();
@@ -427,6 +430,39 @@ public final class ShareCardGenerator {
         paint.setTypeface(typeface);
         paint.setTextAlign(align);
         canvas.drawText(text, x, y, paint);
+    }
+
+    private static List<PointEntity> smoothForDisplay(List<PointEntity> points) {
+        List<TrackPoint> accepted = new ArrayList<>(points.size());
+        for (PointEntity point : points) {
+            if (point == null
+                    || Double.isNaN(point.lat)
+                    || Double.isInfinite(point.lat)
+                    || Double.isNaN(point.lon)
+                    || Double.isInfinite(point.lon)) {
+                continue;
+            }
+            accepted.add(new TrackPoint(
+                    point.seq,
+                    point.lat,
+                    point.lon,
+                    point.altitude == null ? Double.NaN : point.altitude,
+                    point.accuracy == null ? Double.NaN : point.accuracy,
+                    point.speed == null ? Double.NaN : point.speed,
+                    point.bearing == null ? Double.NaN : point.bearing,
+                    point.timestamp,
+                    point.elapsedMs,
+                    point.movingElapsedMs
+            ));
+        }
+        List<PointEntity> smoothed = new ArrayList<>();
+        for (TrackPoint point : RouteSmoother.smooth(accepted)) {
+            PointEntity entity = new PointEntity();
+            entity.lat = point.getLatitude();
+            entity.lon = point.getLongitude();
+            smoothed.add(entity);
+        }
+        return smoothed;
     }
 
     private static Projection chooseProjection(List<PointEntity> points) {

@@ -51,6 +51,7 @@
     <string name="notification_walk_title">Walk in progress</string>
     <string name="notification_paused_title">Activity paused</string>
     <string name="notification_acquiring_title">Finding GPS…</string>
+    <string name="notification_recovering">Recovering activity…</string>
     <string name="notification_action_pause">Pause</string>
     <string name="notification_action_resume">Resume</string>
     <string name="notification_action_finish">Finish</string>
@@ -109,6 +110,8 @@
     <string name="share_footer">Local-first</string>
 
     <string name="performance_title">Performance</string>
+    <string name="splits_title">Splits</string>
+    <string name="split_km">%1$d km</string>
     <string name="chart_pace_title">Pace</string>
     <string name="chart_elevation_title">Elevation</string>
     <string name="chart_no_data">Not enough data</string>
@@ -121,10 +124,32 @@
     <string name="activity_deleted">Activity deleted</string>
     <string name="delete_error">Could not delete the activity</string>
 
+    <string name="backup_title">Encrypted backup</string>
+    <string name="backup_subtitle">Export or restore a local .runbackup file. Your passphrase is never stored.</string>
+    <string name="backup_export">Export</string>
+    <string name="backup_import">Restore</string>
+    <string name="backup_passphrase_title">Backup passphrase</string>
+    <string name="backup_passphrase_message">Use at least 8 characters. The passphrase is not stored and cannot be recovered.</string>
+    <string name="backup_passphrase_hint">Passphrase</string>
+    <string name="backup_passphrase_short">Use at least 8 characters</string>
+    <string name="backup_exported">Encrypted backup exported</string>
+    <string name="backup_export_error">Could not export the backup</string>
+    <string name="backup_imported">%1$d activities restored</string>
+    <string name="backup_import_error">Could not restore the backup. Check the passphrase and file.</string>
+
+    <string name="recovery_title">Unfinished activity</string>
+    <string name="recovery_message">%1$s · %2$s\nDistance: %3$s</string>
+    <string name="recovery_resume">Resume</string>
+    <string name="recovery_save">Finish and save</string>
+    <string name="recovery_discard">Discard</string>
+    <string name="recovery_saved">Activity saved</string>
+
     <string name="export_activity">Export</string>
     <string name="export_title">Export activity</string>
     <string name="export_pdf">PDF report</string>
     <string name="export_xlsx">Excel workbook (.xlsx)</string>
+    <string name="export_gpx">GPX track (.gpx)</string>
+    <string name="export_fit">Garmin FIT (.fit)</string>
     <string name="export_saved">Activity exported</string>
     <string name="export_error">Could not export the activity</string>
     <string name="export_report_title">Activity report</string>

@@ -2,15 +2,21 @@ package com.openrun.core.stats;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.openrun.core.model.ActivityType;
 import com.openrun.core.model.RawFix;
 import com.openrun.core.model.RecordingConfig;
 import com.openrun.core.model.SessionSummary;
+import com.openrun.core.model.Split;
+import com.openrun.core.model.TrackPoint;
 import com.openrun.core.model.TrackingSnapshot;
 import com.openrun.core.model.TrackingState;
 
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TrackingEngineTest {
     private static final long START_ELAPSED = 10_000L;
@@ -164,5 +170,69 @@ public class TrackingEngineTest {
         assertEquals(2_000L, summary.getMovingTimeMs());
         assertEquals(2.0d, summary.getDistanceMeters(), 0.5d);
         assertEquals(TrackingState.FINISHED, engine.getState());
+    }
+
+    @Test
+    public void movingElapsedIsStoredPerPointAndEngineCanBeRestored() {
+        RecordingConfig config = new RecordingConfig(
+                ActivityType.RUN,
+                30,
+                20,
+                15.0d,
+                false
+        );
+        TrackingEngine engine = newEngine(config);
+        double latitude = -23.55d;
+        engine.onFix(fix(latitude, -46.63d, 5, START_EPOCH), START_ELAPSED);
+        latitude += 3.0d / METERS_PER_DEGREE_LAT;
+        engine.onFix(
+                fix(latitude, -46.63d, 5, START_EPOCH + 1000L),
+                START_ELAPSED + 1000L
+        );
+        latitude += 3.0d / METERS_PER_DEGREE_LAT;
+        engine.onFix(
+                fix(latitude, -46.63d, 5, START_EPOCH + 2000L),
+                START_ELAPSED + 2000L
+        );
+        engine.pause(START_ELAPSED + 3000L);
+        engine.resume(START_ELAPSED + 10_000L);
+        latitude += 3.0d / METERS_PER_DEGREE_LAT;
+        engine.onFix(
+                fix(latitude, -46.63d, 5, START_EPOCH + 11_000L),
+                START_ELAPSED + 11_000L
+        );
+        SessionSummary summary = engine.finish(
+                START_ELAPSED + 12_000L,
+                START_EPOCH + 12_000L
+        );
+        List<TrackPoint> points = new ArrayList<>(engine.getPoints());
+        List<Split> splits = new ArrayList<>(engine.getSplits());
+        assertTrue(points.get(points.size() - 1).getMovingElapsedMs()
+                < points.get(points.size() - 1).getElapsedMs());
+
+        TrackingEngine restored = new TrackingEngine();
+        restored.restore(
+                config,
+                points,
+                splits,
+                TrackingState.RECORDING,
+                START_ELAPSED,
+                START_EPOCH,
+                START_ELAPSED,
+                START_EPOCH,
+                summary.getPausedTimeMs(),
+                summary.getDistanceMeters(),
+                summary.getElevationGainMeters(),
+                summary.getElevationLossMeters(),
+                START_ELAPSED + 12_000L,
+                false
+        );
+        TrackingSnapshot snapshot = restored.snapshot(
+                START_ELAPSED + 12_000L,
+                START_EPOCH + 12_000L
+        );
+        assertEquals(5_000L, snapshot.getMovingTimeMs());
+        assertEquals(points.size(), snapshot.getPointCount());
+        assertEquals(summary.getDistanceMeters(), snapshot.getDistanceMeters(), 0.01d);
     }
 }

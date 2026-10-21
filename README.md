@@ -8,23 +8,51 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the first working slice (`0.5.3`):
+This is the `0.6.0` local-first slice:
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
 - Live moving time, distance, current/average pace, accuracy and GPS-loss state
-- Pause / resume / finish
-- Room persistence for sessions and track points
+- Pause / resume / finish, with persisted pause intervals
+- Room persistence for sessions, track points, pauses and kilometre splits
+- Crash/session recovery: resume an unfinished activity or finish/discard it
 - History list on the home screen with swipe-to-delete
 - Activity detail screen with a rounded route map, start/end times and total duration
-- Pace and elevation performance charts
+- Pace and elevation performance charts derived from exact moving time
+- Kilometre splits list with persisted durations and pace
 - Delete activity action with confirmation
 - Save or share a PNG activity card with the route and stats
-- Export an activity as a PDF report or an Excel workbook (`.xlsx`)
+- Export an activity as PDF, Excel (`.xlsx`), GPX (`.gpx`) or Garmin FIT (`.fit`)
+- Encrypted local backup/restore (`.runbackup`) using PBKDF2 + AES-256-GCM
+- Barometer-assisted elevation, Doppler-assisted live pace and display route smoothing
 - In-app language selector (English / Portuguese)
 - English (default) and Portuguese (`values-pt`) resources
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
+
+New in 0.6.0:
+
+- Session recovery. If the process or service dies during a recording, the
+  unfinished session is kept in Room. On the next launch the app offers
+  **Resume**, **Finish and save** or **Discard**. Resuming restores points,
+  distance, pauses and splits and resumes the foreground service. The service
+  also uses `START_STICKY` while active so Android can restart it in the same
+  boot.
+- GPX 1.1 and Garmin FIT export from the activity export menu. FIT uses the
+  official Garmin SDK and includes records, laps, session and activity
+  messages.
+- Encrypted backup/restore on the home screen. The `.runbackup` file contains
+  finished sessions, points, pauses and splits, encrypted with a
+  passphrase-derived AES-256-GCM key. Salt and nonce are per export; the
+  passphrase is never stored. Import merges newer sessions by UUID.
+- Pauses are persisted as intervals and every accepted point now stores its
+  exact moving elapsed time. Kilometre splits are persisted and shown in the
+  detail screen. Charts use the per-point moving clock instead of scaling the
+  wall clock.
+- Barometric altitude is calibrated against the first valid GPS altitude and
+  preferred over GPS elevation. Live pace prefers Doppler speed when it is
+  valid. The detail map and share card smooth the route for display only; raw
+  accepted points remain the source of truth for distance and exports.
 
 New in 0.5.3:
 
@@ -93,12 +121,13 @@ Fixed in 0.2.0:
 
 Not implemented yet:
 
-- GPX export and encrypted `.runbackup` import/export
-- Splits list UI (pace and elevation charts are available)
-- Crash recovery of an interrupted session (interrupted rows are preserved but
-  not shown yet)
+- Importing GPX/FIT files into the app (export is supported; backups are the
+  import path)
 - Auto-pause UI toggle, cadence, heart rate
 - Battery-optimization onboarding for aggressive OEMs
+- Automatic background resurrection after a force-stop or reboot; the app asks
+  the user before resuming in those cases
+- Play Store publishing (not planned for now)
 
 ## Requirements
 
@@ -140,28 +169,70 @@ next UI pass.
 ## Build and test
 
 ```powershell
-# Unit tests for the pure-Java core (distance, filters, state machine)
-.\gradlew.bat :core:test
+# Unit tests for the pure-Java core and export writers
+.\gradlew.bat :core:test :app:testDebugUnitTest
 
-# Debug APK
-.\gradlew.bat :app:assembleDebug
+# Debug APK and instrumented-test APK (compile)
+.\gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest
+
+# Instrumented tests (connected device/emulator)
+.\gradlew.bat :app:connectedDebugAndroidTest
+
+# Signed release APK (requires keystore.properties or CI env vars)
+.\gradlew.bat :app:assembleRelease
 
 # Lint report
 .\gradlew.bat :app:lintDebug
 ```
 
-APK output:
+APK outputs:
 
 ```text
 app/build/outputs/apk/debug/app-debug.apk
+app/build/outputs/apk/release/app-release.apk
 ```
 
-Download the latest published APK from
-[GitHub Releases](https://github.com/ClaudioBzrr/open-run/releases/latest).
+GitHub Actions runs unit tests, assembles debug/test APKs and lint on every
+push/PR, and runs the instrumented tests on an API 34 emulator. The release
+workflow builds and attaches a signed APK when a `v*` tag is pushed.
 
 If you are updating from `0.1.0`, the first launch recreates the local
 development database because the Room schema changed in `0.2.0`. Updates from
-`0.2.0` keep the existing activities.
+`0.2.0` keep the existing activities. Version `0.6.0` adds a non-destructive
+Room migration from schema 2 to 3.
+
+### Release signing
+
+`app/build.gradle` reads signing values from an ignored
+`keystore.properties` file in the repository root, or from these environment
+variables in CI:
+
+- `OPENRUN_KEYSTORE_FILE`
+- `OPENRUN_KEYSTORE_PASSWORD`
+- `OPENRUN_KEY_ALIAS`
+- `OPENRUN_KEY_PASSWORD`
+
+This workspace has a local release keystore outside the repository at
+`C:\dev\open-run-keystore\openrun-release.jks`, with the matching
+`keystore.properties` in the repository root (ignored by Git). Back up both
+files somewhere safe: losing the keystore means future APKs cannot update an
+installed release.
+
+For GitHub Actions, create these repository secrets:
+
+- `OPENRUN_KEYSTORE_BASE64`: base64 of the `.jks` file
+- `OPENRUN_KEYSTORE_PASSWORD`
+- `OPENRUN_KEY_ALIAS`
+- `OPENRUN_KEY_PASSWORD`
+
+```powershell
+[Convert]::ToBase64String(
+  [IO.File]::ReadAllBytes("C:\dev\open-run-keystore\openrun-release.jks")
+)
+```
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, builds
+`app-release.apk` and attaches it to a GitHub release.
 
 Install on a connected device:
 
@@ -189,19 +260,29 @@ Play Services.
    start/end markers, start/end times and total duration.
 8. Confirm that the pace and elevation charts are drawn below the details.
 9. Go back home and tap the saved activity. The same detail screen must open.
-10. Change the app language using the **EN/PT** chip in the header. The UI must
+10. Confirm that the **Splits** card lists each kilometre with duration and pace.
+11. Change the app language using the **EN/PT** chip in the header. The UI must
     switch immediately and survive an app restart.
-11. Open the activity detail and use **Share**. The generated card must show the
+12. Open the activity detail and use **Share**. The generated card must show the
     route, start/end markers, start/end times, duration and stats.
-12. Use **Save image** and choose a destination in the system file picker.
-13. Use **Export** in the detail toolbar and choose **PDF report**. Confirm that
-    the file opens with the route sketch, stats and charts.
-14. Use **Export** again and choose **Excel workbook (.xlsx)**. Confirm that the
-    summary and track-points sheets open in a spreadsheet app.
+13. Use **Save image** and choose a destination in the system file picker.
+14. Use **Export** and save **PDF**, **Excel**, **GPX** and **Garmin FIT**. Check
+    the GPX in any GPX viewer and the FIT in Garmin Connect/Strava or a FIT
+    parser.
 15. Use the trash icon in the detail toolbar to delete an activity. Confirm that
     it disappears from the history after returning home.
-16. Force-stop the app during a session and reopen it. It must not crash; the
-    interrupted row is preserved in the database (not shown in history yet).
+16. Export an encrypted backup in the home screen **Encrypted backup** card,
+    restore it with the correct passphrase, and confirm the activity returns.
+    A wrong passphrase must show an error and must not change the database.
+17. Force-stop the app during a session and reopen it. The recovery dialog must
+    offer **Resume**, **Finish and save** and **Discard**. Resume must restore
+    the route, moving time, splits and pause state.
+18. While paused, force-stop and reopen. Resume must restore the paused state;
+    finish must save the activity with the pause included.
+19. On a device with a pressure sensor, compare a hilly activity's elevation
+    with GPS-only output. Without a barometer, elevation must fall back to GPS.
+20. Reboot the phone during a session and reopen the app. Resume must not be
+    offered across a reboot; **Finish and save** must preserve the stored data.
 
 ## Project layout
 
@@ -213,13 +294,16 @@ core/                       Pure Java domain module, no Android imports
 
 app/
   data/                     Room entities, DAO, database, repository
-  tracking/                 Foreground service, FusedLocation, state holder
+  tracking/                 Foreground service, FusedLocation, state holder,
+                            barometer and recovery policy
   ui/                       MainActivity, RecordActivity,
                             SessionDetailActivity, PerformanceChartView,
                             history adapter
   util/                     Formatting, in-app language selection,
                             PerformanceSeriesBuilder, ShareCardGenerator,
-                            SessionPdfWriter, SessionXlsxWriter
+                            SessionPdfWriter, SessionXlsxWriter,
+                            SessionGpxWriter, SessionFitWriter,
+                            BackupManager
   res/values/               English strings and colors
   res/values-pt/            Portuguese strings
   res/values-night/         Dark palette
@@ -249,13 +333,19 @@ gets an iOS sibling.
    `PRIORITY_HIGH_ACCURACY` request and feeds fixes to `TrackingEngine`.
 3. `TrackFilter` rejects bad accuracy, duplicate timestamps, impossible jumps
    and sub-0.8 m jitter.
-4. Accepted points are written to Room in order. Summaries are persisted every
-   five seconds and on state changes.
-5. Finishing computes the final summary, marks the session `FINISHED`, updates
-   the Room row and posts a one-shot event to the UI.
-6. `RecordActivity` opens `SessionDetailActivity`, which loads the accepted
-   points and draws the route with osmdroid.
-7. The notification actions pause, resume and finish without opening the app.
+4. Accepted points are written to Room in order with their moving elapsed
+   time. Summaries are persisted every five seconds and on state changes.
+5. Pause/resume writes a pause interval; splits are persisted as each kilometre
+   is crossed.
+6. Finishing closes any open pause, persists remaining splits, computes the
+   final summary, marks the session `FINISHED`, updates the Room row and posts a
+   one-shot event to the UI.
+7. `RecordActivity` opens `SessionDetailActivity`, which loads the accepted
+   points, splits and route.
+8. The notification actions pause, resume and finish without opening the app.
+9. If the service/process dies, the unfinished row remains. The next launch
+   restores it after the user chooses **Resume**. Sessions interrupted by a
+   reboot or an older incompatible row are finished/discarded explicitly.
 
 The service holds a partial wake lock while recording and releases it on
 stop/destroy.
@@ -275,13 +365,20 @@ stop/destroy.
 - Distance uses Haversine between accepted points and rejects implied speeds
   above the activity limit. Segments shorter than 0.8 m are ignored to reduce
   stationary jitter.
+- A pressure sensor, when present, provides barometric altitude after a GPS
+  calibration at the first valid altitude. GPS altitude is the fallback.
+- Doppler speed from the location fix is preferred for live current pace when
+  valid; average pace and distance still come from accepted positions.
 - Pausing resets the segment anchor so movement while paused is not added to
-  the route.
+  the route. Pause intervals are stored in Room.
+- The detail map and share card smooth the route for display only. Raw accepted
+  points remain the source of truth for distance and GPX/FIT exports.
 
-The performance charts are derived from the accepted points: pace uses a
-rolling 30-second window scaled to moving time, and elevation uses a smoothed
-altitude series. Both are downsampled for drawing and do not require a network
-connection.
+The performance charts are derived from accepted points. Each point stores a
+moving elapsed time that excludes pauses; pace uses a rolling 30-second window
+on that clock and elevation uses a smoothed altitude series. Both are
+downsampled for drawing and do not require a network connection. Kilometre
+splits are computed from the same moving clock and persisted.
 
 ## Localization
 
@@ -312,7 +409,10 @@ formatting uses the device or in-app locale, so Portuguese shows `5,00 km` and
 - `android:allowBackup="false"` plus backup exclusion rules keep the database
   out of Google backups.
 - Location samples never leave the device in this version.
-- The next milestone is the encrypted export.
+- The `.runbackup` file is a user-initiated local export. It is encrypted with
+  a passphrase-derived AES-256-GCM key; the passphrase is not stored by the
+  app. GPX and FIT exports are intentionally unencrypted interoperability
+  formats, so treat them as you would any other location file.
 
 ## Support
 
@@ -321,11 +421,12 @@ If Open Run is useful to you, you can support development via
 
 ## Next milestone
 
-The highest-value next slice is data ownership:
+The next high-value work is:
 
-1. GPX export for a single activity (interoperable with Strava/Garmin).
-2. Encrypted `.runbackup` with PBKDF2/AES-GCM and SAF file picker.
-3. Import/merge by session UUID.
-4. A "last backup" reminder.
+1. GPX/FIT import and a stable backup merge preview.
+2. Auto-pause controls and a pause-aware splits chart.
+3. Battery-optimization onboarding for aggressive OEMs.
+4. More instrumented coverage for the recording service and recovery flow.
 
-After that: splits chart, interrupted-session recovery and auto-pause controls.
+Play Store publishing is intentionally out of scope for now; APKs are
+distributed through GitHub Releases.

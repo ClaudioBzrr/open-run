@@ -55,6 +55,7 @@ public final class TrackingEngine {
     private double smoothedAltitude = Double.NaN;
     private double lastElevationAnchor = Double.NaN;
     private double lastSegmentSpeedMps;
+    private double smoothedSpeedMps = Double.NaN;
     private int nextSplitIndex = 1;
     private double nextSplitAtMeters = SPLIT_DISTANCE_METERS;
     private long lastSplitMovingMs;
@@ -70,6 +71,102 @@ public final class TrackingEngine {
         this.state = TrackingState.ACQUIRING;
         this.sessionStartElapsedMs = nowElapsedMs;
         this.sessionStartEpochMs = nowEpochMs;
+    }
+
+    /**
+     * Rehydrates the engine after process death. Points and splits come from
+     * Room; accumulated distance and elevation come from the persisted session.
+     */
+    public synchronized void restore(RecordingConfig config,
+                                     List<TrackPoint> restoredPoints,
+                                     List<Split> restoredSplits,
+                                     TrackingState restoredState,
+                                     long sessionStartElapsedMs,
+                                     long sessionStartEpochMs,
+                                     long recordingStartElapsedMs,
+                                     long recordingStartEpochMs,
+                                     long totalPausedMs,
+                                     double distanceMeters,
+                                     double elevationGainMeters,
+                                     double elevationLossMeters,
+                                     long nowElapsedMs,
+                                     boolean autoPaused) {
+        reset();
+        this.config = config;
+        this.filter = new TrackFilter(config);
+        this.state = restoredState;
+        this.sessionStartElapsedMs = sessionStartElapsedMs;
+        this.sessionStartEpochMs = sessionStartEpochMs;
+        this.recordingStartElapsedMs = recordingStartElapsedMs;
+        this.recordingStartEpochMs = recordingStartEpochMs;
+        this.totalPausedMs = Math.max(0, totalPausedMs);
+        this.distanceMeters = Math.max(0, distanceMeters);
+        this.elevationGainMeters = Math.max(0, elevationGainMeters);
+        this.elevationLossMeters = Math.max(0, elevationLossMeters);
+        this.autoPaused = autoPaused && restoredState == TrackingState.PAUSED;
+        this.pausedAtElapsedMs = restoredState == TrackingState.PAUSED
+                ? nowElapsedMs
+                : -1;
+
+        if (restoredPoints != null) {
+            points.addAll(restoredPoints);
+        }
+        if (restoredSplits != null) {
+            splits.addAll(restoredSplits);
+        }
+
+        if (!points.isEmpty()) {
+            TrackPoint last = points.get(points.size() - 1);
+            lastPoint = last;
+            lastFixEpochMs = last.getTimestampEpochMs();
+            lastAccuracyMeters = last.getAccuracyMeters();
+            lastSegmentSpeedMps = finite(last.getSpeedMps()) ? last.getSpeedMps() : 0;
+            if (finite(last.getSpeedMps())) {
+                smoothedSpeedMps = last.getSpeedMps();
+            }
+            filter.restoreLast(new RawFix(
+                    last.getLatitude(),
+                    last.getLongitude(),
+                    last.getAltitudeMeters(),
+                    last.getAccuracyMeters(),
+                    last.getSpeedMps(),
+                    last.getBearingDegrees(),
+                    last.getTimestampEpochMs()
+            ));
+            if (finite(last.getAltitudeMeters())) {
+                smoothedAltitude = last.getAltitudeMeters();
+                lastElevationAnchor = smoothedAltitude;
+            }
+            for (int i = points.size() - 1; i >= 0; i--) {
+                TrackPoint point = points.get(i);
+                if (point.getElapsedMs() < last.getElapsedMs() - PACE_WINDOW_MS) {
+                    break;
+                }
+                recentPoints.addFirst(point);
+            }
+
+            if (recordingStartElapsedMs <= 0) {
+                this.recordingStartElapsedMs = Math.max(
+                        0,
+                        nowElapsedMs - last.getElapsedMs()
+                );
+            }
+            if (recordingStartEpochMs <= 0) {
+                this.recordingStartEpochMs = last.getTimestampEpochMs()
+                        - last.getElapsedMs();
+            }
+        } else if (recordingStartElapsedMs <= 0) {
+            this.recordingStartElapsedMs = -1;
+        }
+
+        long splitMoving = 0;
+        for (Split split : splits) {
+            splitMoving += Math.max(0, split.getDurationMs());
+        }
+        lastSplitMovingMs = splitMoving;
+        nextSplitIndex = splits.size() + 1;
+        nextSplitAtMeters = nextSplitIndex * SPLIT_DISTANCE_METERS;
+        summary = null;
     }
 
     /**
@@ -92,6 +189,7 @@ public final class TrackingEngine {
 
         lastFixEpochMs = fix.getTimestampEpochMs();
         lastAccuracyMeters = fix.getAccuracyMeters();
+        updateSmoothedSpeed(fix);
 
         if (state == TrackingState.PAUSED) {
             maybeAutoResume(fix, nowElapsedMs);
@@ -139,6 +237,7 @@ public final class TrackingEngine {
         filter.reset();
         lastPoint = null;
         lastSegmentSpeedMps = 0;
+        smoothedSpeedMps = Double.NaN;
         recentPoints.clear();
     }
 
@@ -194,6 +293,12 @@ public final class TrackingEngine {
                 ? summary.getPausedTimeMs()
                 : computePausedMs(nowElapsedMs);
         double currentPace = state == TrackingState.RECORDING ? computeCurrentPace() : 0;
+        if (state == TrackingState.RECORDING && !Double.isNaN(smoothedSpeedMps)) {
+            double dopplerPace = 1000.0d / smoothedSpeedMps;
+            if (dopplerPace >= 120.0d && dopplerPace <= 1800.0d) {
+                currentPace = dopplerPace;
+            }
+        }
         double averagePace = GeoMath.paceSecPerKm(distanceMeters, movingMs);
         boolean signalLost = state == TrackingState.RECORDING
                 && lastFixEpochMs > 0
@@ -245,6 +350,26 @@ public final class TrackingEngine {
         return Collections.unmodifiableList(points);
     }
 
+    public synchronized List<Split> getSplits() {
+        return Collections.unmodifiableList(splits);
+    }
+
+    public synchronized long getRecordingStartElapsedMs() {
+        return recordingStartElapsedMs;
+    }
+
+    public synchronized long getRecordingStartEpochMs() {
+        return recordingStartEpochMs;
+    }
+
+    public synchronized long getTotalPausedMs() {
+        return totalPausedMs;
+    }
+
+    public synchronized long getPausedAtElapsedMs() {
+        return pausedAtElapsedMs;
+    }
+
     public synchronized TrackPoint getLastAcceptedPoint() {
         return lastPoint;
     }
@@ -272,6 +397,7 @@ public final class TrackingEngine {
 
         updateElevation(fix);
 
+        long movingMs = computeMovingMs(nowElapsedMs);
         TrackPoint point = new TrackPoint(
                 points.size(),
                 fix.getLatitude(),
@@ -281,13 +407,13 @@ public final class TrackingEngine {
                 fix.getSpeedMps(),
                 fix.getBearingDegrees(),
                 fix.getTimestampEpochMs(),
-                elapsedMs
+                elapsedMs,
+                movingMs
         );
         points.add(point);
         recentPoints.addLast(point);
         pruneRecentPoints(point.getElapsedMs());
 
-        long movingMs = computeMovingMs(nowElapsedMs);
         while (distanceMeters >= nextSplitAtMeters) {
             long splitDuration = Math.max(0, movingMs - lastSplitMovingMs);
             splits.add(new Split(nextSplitIndex, SPLIT_DISTANCE_METERS, splitDuration));
@@ -297,6 +423,21 @@ public final class TrackingEngine {
         }
 
         lastPoint = point;
+    }
+
+    private void updateSmoothedSpeed(RawFix fix) {
+        if (!fix.hasSpeed() || config == null) {
+            return;
+        }
+        double speed = fix.getSpeedMps();
+        if (speed < 0 || speed > config.getMaxSpeedMps()) {
+            return;
+        }
+        if (Double.isNaN(smoothedSpeedMps)) {
+            smoothedSpeedMps = speed;
+        } else {
+            smoothedSpeedMps = smoothedSpeedMps + 0.25d * (speed - smoothedSpeedMps);
+        }
     }
 
     private void pruneRecentPoints(long currentElapsedMs) {
@@ -444,6 +585,10 @@ public final class TrackingEngine {
         return recordingStartEpochMs > 0 ? recordingStartEpochMs : sessionStartEpochMs;
     }
 
+    private boolean finite(double value) {
+        return !Double.isNaN(value) && !Double.isInfinite(value);
+    }
+
     private double bestSplitPace() {
         double best = 0;
         for (Split split : splits) {
@@ -477,6 +622,7 @@ public final class TrackingEngine {
         smoothedAltitude = Double.NaN;
         lastElevationAnchor = Double.NaN;
         lastSegmentSpeedMps = 0;
+        smoothedSpeedMps = Double.NaN;
         nextSplitIndex = 1;
         nextSplitAtMeters = SPLIT_DISTANCE_METERS;
         lastSplitMovingMs = 0;
