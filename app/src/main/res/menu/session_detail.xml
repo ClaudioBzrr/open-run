@@ -2,9 +2,15 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_export"
+        android:icon="@drawable/ic_export"
+        android:iconTint="?attr/colorOnSurface"
+        android:title="@string/export_activity"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/action_delete"
         android:icon="@drawable/ic_delete"
         android:iconTint="@color/error"
         android:title="@string/delete_activity"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
 </menu>

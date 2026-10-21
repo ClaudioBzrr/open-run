@@ -3,10 +3,12 @@ package com.openrun.app.ui;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
@@ -16,6 +18,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.view.MenuItemCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.openrun.app.OpenRunApp;
@@ -28,6 +31,8 @@ import com.openrun.app.databinding.ActivitySessionDetailBinding;
 import com.openrun.app.util.Formatters;
 import com.openrun.app.util.PerformanceSeries;
 import com.openrun.app.util.PerformanceSeriesBuilder;
+import com.openrun.app.util.SessionPdfWriter;
+import com.openrun.app.util.SessionXlsxWriter;
 import com.openrun.app.util.ShareCardGenerator;
 import com.openrun.core.model.ActivityType;
 import com.openrun.core.stats.GeoMath;
@@ -42,22 +47,42 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class SessionDetailActivity extends AppCompatActivity {
     public static final String EXTRA_SESSION_ID = "com.openrun.app.extra.SESSION_ID";
 
+    private static final int EXPORT_PDF = 1;
+    private static final int EXPORT_XLSX = 2;
+
     private final ExecutorService shareExecutor = Executors.newSingleThreadExecutor();
     private final ActivityResultLauncher<String> saveImageLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.CreateDocument("image/png"),
                     this::onSaveImageSelected
+            );
+    private final ActivityResultLauncher<String> exportPdfLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.CreateDocument("application/pdf"),
+                    uri -> onExportDestinationSelected(uri, EXPORT_PDF)
+            );
+    private final ActivityResultLauncher<String> exportXlsxLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.CreateDocument(
+                            "application/vnd.openxmlformats-officedocument."
+                                    + "spreadsheetml.sheet"
+                    ),
+                    uri -> onExportDestinationSelected(uri, EXPORT_XLSX)
             );
 
     private ActivitySessionDetailBinding binding;
@@ -78,16 +103,22 @@ public class SessionDetailActivity extends AppCompatActivity {
         binding.toolbar.setNavigationContentDescription(R.string.navigate_back);
         binding.toolbar.setNavigationOnClickListener(v -> finish());
         binding.toolbar.inflateMenu(R.menu.session_detail);
+        tintToolbarActions();
         binding.toolbar.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.action_delete) {
+            int itemId = item.getItemId();
+            if (itemId == R.id.action_delete) {
                 confirmDelete();
+                return true;
+            }
+            if (itemId == R.id.action_export) {
+                showExportDialog();
                 return true;
             }
             return false;
         });
         binding.buttonSaveImage.setOnClickListener(v -> prepareShare(true));
         binding.buttonShare.setOnClickListener(v -> prepareShare(false));
-        setShareBusy(false);
+        setBusy(false);
 
         sessionId = getIntent().getStringExtra(EXTRA_SESSION_ID);
         if (sessionId == null) {
@@ -98,6 +129,116 @@ public class SessionDetailActivity extends AppCompatActivity {
         repository = ((OpenRunApp) getApplication()).getRepository();
         configureMap();
         loadSession();
+    }
+
+    private void tintToolbarActions() {
+        // android:iconTint on a menu item is not applied by AppCompat's menu
+        // inflater, which left the delete icon black on the dark toolbar.
+        // Tint both actions explicitly so they stay legible in every theme.
+        MenuItem export = binding.toolbar.getMenu().findItem(R.id.action_export);
+        if (export != null) {
+            MenuItemCompat.setIconTintList(
+                    export,
+                    ColorStateList.valueOf(
+                            ContextCompat.getColor(this, R.color.on_surface)
+                    )
+            );
+        }
+        MenuItem delete = binding.toolbar.getMenu().findItem(R.id.action_delete);
+        if (delete != null) {
+            MenuItemCompat.setIconTintList(
+                    delete,
+                    ColorStateList.valueOf(
+                            ContextCompat.getColor(this, R.color.error)
+                    )
+            );
+        }
+    }
+
+    private void showExportDialog() {
+        if (currentSession == null || shareBusy) {
+            return;
+        }
+        String[] options = {
+                getString(R.string.export_pdf),
+                getString(R.string.export_xlsx)
+        };
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.export_title)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        exportPdfLauncher.launch(exportFileName("pdf"));
+                    } else {
+                        exportXlsxLauncher.launch(exportFileName("xlsx"));
+                    }
+                })
+                .setNegativeButton(R.string.button_cancel, null)
+                .show();
+    }
+
+    private String exportFileName(String extension) {
+        SessionEntity session = currentSession;
+        long when = session != null && session.startedAt > 0
+                ? session.startedAt
+                : System.currentTimeMillis();
+        String type = session != null
+                && ActivityType.fromKey(session.type) == ActivityType.WALK
+                ? "walk"
+                : "run";
+        String stamp = new SimpleDateFormat(
+                "yyyyMMdd-HHmm",
+                Locale.US
+        ).format(new Date(when));
+        return "openrun-" + type + "-" + stamp + "." + extension;
+    }
+
+    private void onExportDestinationSelected(Uri uri, int format) {
+        if (uri == null
+                || currentSession == null
+                || isFinishing()
+                || isDestroyed()) {
+            return;
+        }
+        final SessionEntity session = currentSession;
+        final List<PointEntity> points = new ArrayList<>(currentPoints);
+        setBusy(true);
+
+        shareExecutor.execute(() -> {
+            try (OutputStream output = getContentResolver().openOutputStream(uri)) {
+                if (output == null) {
+                    throw new IOException("Cannot open export destination");
+                }
+                if (format == EXPORT_PDF) {
+                    SessionPdfWriter.write(this, output, session, points);
+                } else {
+                    SessionXlsxWriter.write(this, output, session, points);
+                }
+                output.flush();
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    setBusy(false);
+                    Toast.makeText(
+                            this,
+                            R.string.export_saved,
+                            Toast.LENGTH_SHORT
+                    ).show();
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    setBusy(false);
+                    Toast.makeText(
+                            this,
+                            R.string.export_error,
+                            Toast.LENGTH_SHORT
+                    ).show();
+                });
+            }
+        });
     }
 
     private void configureMap() {
@@ -135,7 +276,7 @@ public class SessionDetailActivity extends AppCompatActivity {
     private void bind(SessionEntity session, List<PointEntity> points) {
         currentSession = session;
         currentPoints = points != null ? points : Collections.emptyList();
-        setShareBusy(false);
+        setBusy(false);
 
         ActivityType type = ActivityType.fromKey(session.type);
         binding.toolbar.setTitle(
@@ -187,6 +328,9 @@ public class SessionDetailActivity extends AppCompatActivity {
     }
 
     private void confirmDelete() {
+        if (currentSession == null || shareBusy) {
+            return;
+        }
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.delete_activity_title)
                 .setMessage(R.string.delete_activity_message)
@@ -204,7 +348,7 @@ public class SessionDetailActivity extends AppCompatActivity {
         if (id == null) {
             return;
         }
-        setShareBusy(true);
+        setBusy(true);
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 repository.deleteSession(id);
@@ -224,7 +368,7 @@ public class SessionDetailActivity extends AppCompatActivity {
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
-                    setShareBusy(false);
+                    setBusy(false);
                     Toast.makeText(
                             this,
                             R.string.delete_error,
@@ -242,7 +386,7 @@ public class SessionDetailActivity extends AppCompatActivity {
 
         final SessionEntity session = currentSession;
         final List<PointEntity> points = new ArrayList<>(currentPoints);
-        setShareBusy(true);
+        setBusy(true);
         Toast.makeText(this, R.string.share_preparing, Toast.LENGTH_SHORT).show();
 
         shareExecutor.execute(() -> {
@@ -268,7 +412,7 @@ public class SessionDetailActivity extends AppCompatActivity {
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
-                    setShareBusy(false);
+                    setBusy(false);
                     if (save) {
                         pendingImageFile = result;
                         saveImageLauncher.launch(result.getName());
@@ -281,7 +425,7 @@ public class SessionDetailActivity extends AppCompatActivity {
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
-                    setShareBusy(false);
+                    setBusy(false);
                     Toast.makeText(
                             this,
                             R.string.share_error,
@@ -323,7 +467,7 @@ public class SessionDetailActivity extends AppCompatActivity {
         }
         final File source = pendingImageFile;
         pendingImageFile = null;
-        setShareBusy(true);
+        setBusy(true);
 
         shareExecutor.execute(() -> {
             try (InputStream input = new FileInputStream(source);
@@ -340,7 +484,7 @@ public class SessionDetailActivity extends AppCompatActivity {
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
-                    setShareBusy(false);
+                    setBusy(false);
                     Toast.makeText(
                             this,
                             R.string.share_saved,
@@ -352,7 +496,7 @@ public class SessionDetailActivity extends AppCompatActivity {
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
-                    setShareBusy(false);
+                    setBusy(false);
                     Toast.makeText(
                             this,
                             R.string.share_error,
@@ -363,7 +507,7 @@ public class SessionDetailActivity extends AppCompatActivity {
         });
     }
 
-    private void setShareBusy(boolean busy) {
+    private void setBusy(boolean busy) {
         shareBusy = busy;
         if (binding == null) {
             return;
@@ -372,6 +516,14 @@ public class SessionDetailActivity extends AppCompatActivity {
         boolean enabled = !busy && currentSession != null;
         binding.buttonSaveImage.setEnabled(enabled);
         binding.buttonShare.setEnabled(enabled);
+        MenuItem export = binding.toolbar.getMenu().findItem(R.id.action_export);
+        if (export != null) {
+            export.setEnabled(enabled);
+        }
+        MenuItem delete = binding.toolbar.getMenu().findItem(R.id.action_delete);
+        if (delete != null) {
+            delete.setEnabled(enabled);
+        }
     }
 
     private void renderRoute(List<PointEntity> points) {

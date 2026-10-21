@@ -8,7 +8,7 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the first working slice (`0.5.1`):
+This is the first working slice (`0.5.2`):
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
@@ -20,10 +20,19 @@ This is the first working slice (`0.5.1`):
 - Pace and elevation performance charts
 - Delete activity action with confirmation
 - Save or share a PNG activity card with the route and stats
+- Export an activity as a PDF report or an Excel workbook (`.xlsx`)
 - In-app language selector (English / Portuguese)
 - English (default) and Portuguese (`values-pt`) resources
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
+
+New in 0.5.2:
+
+- Export from the detail toolbar: a one-page PDF report with route sketch,
+  stats and charts, or an Excel workbook with a summary sheet and every track
+  point
+- Toolbar actions now tint their icons explicitly, so the delete icon keeps
+  its destructive color in light and dark themes
 
 New in 0.5.1:
 
@@ -177,9 +186,13 @@ Play Services.
 11. Open the activity detail and use **Share**. The generated card must show the
     route, start/end markers, start/end times, duration and stats.
 12. Use **Save image** and choose a destination in the system file picker.
-13. Use the trash icon in the detail toolbar to delete an activity. Confirm that
+13. Use **Export** in the detail toolbar and choose **PDF report**. Confirm that
+    the file opens with the route sketch, stats and charts.
+14. Use **Export** again and choose **Excel workbook (.xlsx)**. Confirm that the
+    summary and track-points sheets open in a spreadsheet app.
+15. Use the trash icon in the detail toolbar to delete an activity. Confirm that
     it disappears from the history after returning home.
-14. Force-stop the app during a session and reopen it. It must not crash; the
+16. Force-stop the app during a session and reopen it. It must not crash; the
     interrupted row is preserved in the database (not shown in history yet).
 
 ## Project layout
@@ -197,7 +210,8 @@ app/
                             SessionDetailActivity, PerformanceChartView,
                             history adapter
   util/                     Formatting, in-app language selection,
-                            PerformanceSeriesBuilder, ShareCardGenerator
+                            PerformanceSeriesBuilder, ShareCardGenerator,
+                            SessionPdfWriter, SessionXlsxWriter
   res/values/               English strings and colors
   res/values-pt/            Portuguese strings
   res/values-night/         Dark palette

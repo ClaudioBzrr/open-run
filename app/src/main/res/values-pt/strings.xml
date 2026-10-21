@@ -120,4 +120,41 @@
     <string name="delete_activity_message">Isso remove permanentemente esta atividade e o percurso deste aparelho.</string>
     <string name="activity_deleted">Atividade excluída</string>
     <string name="delete_error">Não foi possível excluir a atividade</string>
+
+    <string name="export_activity">Exportar</string>
+    <string name="export_title">Exportar atividade</string>
+    <string name="export_pdf">Relatório em PDF</string>
+    <string name="export_xlsx">Planilha Excel (.xlsx)</string>
+    <string name="export_saved">Atividade exportada</string>
+    <string name="export_error">Não foi possível exportar a atividade</string>
+    <string name="export_report_title">Relatório da atividade</string>
+    <string name="export_route_title">Percurso</string>
+    <string name="export_report_generated_by">Gerado pelo Open Run</string>
+    <string name="export_metric_activity">Atividade</string>
+    <string name="export_metric_id">ID da atividade</string>
+    <string name="export_metric_metric">Métrica</string>
+    <string name="export_metric_value">Valor</string>
+    <string name="export_metric_display">Formatado</string>
+    <string name="export_metric_start">Horário de início (epoch ms)</string>
+    <string name="export_metric_end">Horário de fim (epoch ms)</string>
+    <string name="export_metric_distance">Distância (m)</string>
+    <string name="export_metric_moving">Tempo em movimento (s)</string>
+    <string name="export_metric_total">Duração total (s)</string>
+    <string name="export_metric_pace">Ritmo médio (s/km)</string>
+    <string name="export_metric_elevation_gain">Ganho de elevação (m)</string>
+    <string name="export_metric_elevation_loss">Perda de elevação (m)</string>
+    <string name="export_sheet_summary">Resumo</string>
+    <string name="export_sheet_points">Pontos do percurso</string>
+    <string name="export_track_point_count">%1$d pontos do percurso</string>
+    <string name="label_track_points">Pontos do percurso</string>
+
+    <string name="export_col_sequence">Nº</string>
+    <string name="export_col_timestamp">Horário</string>
+    <string name="export_col_elapsed">Tempo decorrido (s)</string>
+    <string name="export_col_latitude">Latitude</string>
+    <string name="export_col_longitude">Longitude</string>
+    <string name="export_col_altitude">Altitude (m)</string>
+    <string name="export_col_accuracy">Precisão (m)</string>
+    <string name="export_col_speed">Velocidade (m/s)</string>
+    <string name="export_col_bearing">Rumo (°)</string>
 </resources>
