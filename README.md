@@ -8,7 +8,7 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the `0.6.1` local-first slice:
+This is the `0.6.2` local-first slice:
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
@@ -31,6 +31,10 @@ This is the `0.6.1` local-first slice:
 - English (default) and Portuguese (`values-pt`) resources
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
+
+New in 0.6.2:
+
+- The navigation menu button is now on the left side of the home hero.
 
 New in 0.6.1:
 
