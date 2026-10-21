@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
 
         binding.cardStartRun.setOnClickListener(v -> openRecord(ActivityType.RUN));
         binding.cardStartWalk.setOnClickListener(v -> openRecord(ActivityType.WALK));
-        binding.buttonViewAll.setOnClickListener(v -> openAllActivities());
+        binding.buttonViewAll.setOnClickListener(v -> openAllActivities(true));
         setupNavigationDrawer();
         updateLanguageMenu();
     }
@@ -124,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
             if (id == R.id.nav_all_activities) {
-                openAllActivities();
+                openAllActivities(false);
             } else if (id == R.id.nav_backup_export) {
                 binding.drawerLayout.closeDrawers();
                 showBackupPassphraseDialog(true, null);
@@ -181,8 +181,10 @@ public class MainActivity extends AppCompatActivity {
         binding.navigationView.setCheckedItem(checkedId);
     }
 
-    private void openAllActivities() {
-        startActivity(new Intent(this, AllActivitiesActivity.class));
+    private void openAllActivities(boolean showAll) {
+        Intent intent = new Intent(this, AllActivitiesActivity.class);
+        intent.putExtra(AllActivitiesActivity.EXTRA_SHOW_ALL, showAll);
+        startActivity(intent);
     }
 
     @Override

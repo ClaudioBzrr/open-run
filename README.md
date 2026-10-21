@@ -38,9 +38,11 @@ New in 0.6.1:
   Portuguese language choices, a link to the complete activity history, and
   **Export encrypted backup** / **Restore encrypted backup** actions.
 - The home screen now shows at most the three most recent activities. A
-  **View all** action opens the dedicated history screen.
-- The dedicated **All activities** screen uses the same swipe-to-delete
-  behavior and opens the existing activity detail screen.
+  **View all** action opens the dedicated history screen with the full list.
+- The dedicated history screen defaults to the four most recent activities when
+  opened from the drawer; its **View all** action expands the complete list.
+  It uses the same swipe-to-delete behavior and opens the existing detail
+  screen.
 - Backup import/export moved out of the long home feed and into the drawer.
 
 New in 0.6.0:
@@ -274,10 +276,10 @@ Play Services.
 8. Confirm that the pace and elevation charts are drawn below the details.
 9. Go back home and tap the saved activity. The same detail screen must open.
 10. Confirm that the home screen shows at most three recent activities and that
-    **View all** opens the complete **All activities** screen, including
-    swipe-to-delete.
+    **View all** opens the complete history screen, including swipe-to-delete.
 11. Open the drawer from the menu button and select **All activities**. Confirm
-    that the complete history is listed.
+    that it shows the four most recent by default and that **View all** expands
+    the complete history.
 12. Confirm that the **Splits** card lists each kilometre with duration and pace.
 13. Change the app language from the drawer. The UI must switch immediately and
     survive an app restart; the selected language must be checked in the drawer.
