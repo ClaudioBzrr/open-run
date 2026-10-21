@@ -8,7 +8,11 @@
     <string name="start_walk">Iniciar caminhada</string>
     <string name="start_run_subtitle">Registre ritmo, distância e parciais</string>
     <string name="start_walk_subtitle">Uma caminhada tranquila ao ar livre</string>
-    <string name="history_title">Atividades recentes</string>
+    <string name="history_title">Atividades</string>
+    <string name="view_all">Ver todas</string>
+    <string name="all_activities">Todas as atividades</string>
+    <string name="all_activities_empty">Nenhuma atividade ainda.</string>
+    <string name="open_menu">Abrir menu</string>
     <string name="history_empty">Nenhuma atividade ainda. A primeira começa acima.</string>
 
     <string name="activity_run">Corrida</string>
@@ -128,6 +132,8 @@
     <string name="backup_subtitle">Exporte ou restaure um arquivo .runbackup local. Sua senha nunca é armazenada.</string>
     <string name="backup_export">Exportar</string>
     <string name="backup_import">Restaurar</string>
+    <string name="drawer_backup_export">Exportar backup criptografado</string>
+    <string name="drawer_backup_import">Restaurar backup criptografado</string>
     <string name="backup_passphrase_title">Senha do backup</string>
     <string name="backup_passphrase_message">Use pelo menos 8 caracteres. A senha não é armazenada e não pode ser recuperada.</string>
     <string name="backup_passphrase_hint">Senha</string>

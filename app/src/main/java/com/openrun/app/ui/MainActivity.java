@@ -8,11 +8,12 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -38,6 +39,8 @@ import com.openrun.core.stats.GeoMath;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -45,6 +48,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
+    private static final int HOME_RECENT_LIMIT = 3;
+
     private ActivityMainBinding binding;
     private SessionAdapter adapter;
     private SessionRepository repository;
@@ -87,22 +92,97 @@ public class MainActivity extends AppCompatActivity {
 
         HistoryViewModel viewModel = new ViewModelProvider(this).get(HistoryViewModel.class);
         viewModel.getSessions().observe(this, sessions -> {
-            adapter.submitList(sessions);
-            boolean empty = sessions == null || sessions.isEmpty();
+            List<SessionEntity> all = sessions == null
+                    ? Collections.emptyList()
+                    : sessions;
+            List<SessionEntity> recent = all.size() > HOME_RECENT_LIMIT
+                    ? new ArrayList<>(all.subList(0, HOME_RECENT_LIMIT))
+                    : all;
+            adapter.submitList(recent);
+            boolean empty = all.isEmpty();
             binding.emptyHistory.setVisibility(empty ? View.VISIBLE : View.GONE);
             binding.recyclerSessions.setVisibility(empty ? View.GONE : View.VISIBLE);
+            binding.buttonViewAll.setVisibility(
+                    all.size() > HOME_RECENT_LIMIT ? View.VISIBLE : View.GONE
+            );
         });
 
         binding.cardStartRun.setOnClickListener(v -> openRecord(ActivityType.RUN));
         binding.cardStartWalk.setOnClickListener(v -> openRecord(ActivityType.WALK));
-        binding.languageButton.setOnClickListener(v -> showLanguageDialog());
-        binding.buttonBackupExport.setOnClickListener(v -> showBackupPassphraseDialog(true, null));
-        binding.buttonBackupImport.setOnClickListener(v -> {
-            if (!backupBusy) {
-                backupImportLauncher.launch(new String[]{"*/*"});
+        binding.buttonViewAll.setOnClickListener(v -> openAllActivities());
+        setupNavigationDrawer();
+        updateLanguageMenu();
+    }
+
+    private void setupNavigationDrawer() {
+        binding.buttonMenu.setOnClickListener(v ->
+                binding.drawerLayout.openDrawer(GravityCompat.START));
+        binding.navigationView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_language) {
+                // Let NavigationView expand the language submenu in place.
+                return true;
+            }
+            if (id == R.id.nav_all_activities) {
+                openAllActivities();
+            } else if (id == R.id.nav_backup_export) {
+                binding.drawerLayout.closeDrawers();
+                showBackupPassphraseDialog(true, null);
+                return true;
+            } else if (id == R.id.nav_backup_import) {
+                binding.drawerLayout.closeDrawers();
+                if (!backupBusy) {
+                    backupImportLauncher.launch(new String[]{"*/*"});
+                }
+                return true;
+            } else if (id == R.id.nav_language_system) {
+                setDrawerLanguage(LanguageManager.SYSTEM);
+            } else if (id == R.id.nav_language_en) {
+                setDrawerLanguage(LanguageManager.ENGLISH);
+            } else if (id == R.id.nav_language_pt) {
+                setDrawerLanguage(LanguageManager.PORTUGUESE);
+            }
+            binding.drawerLayout.closeDrawers();
+            return true;
+        });
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    binding.drawerLayout.closeDrawers();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
             }
         });
-        updateLanguageButton();
+    }
+
+    private void setDrawerLanguage(String tag) {
+        binding.drawerLayout.closeDrawers();
+        LanguageManager.setLanguage(this, tag);
+        updateLanguageMenu();
+    }
+
+    private void updateLanguageMenu() {
+        String saved = LanguageManager.getSavedTag(this);
+        String current = LanguageManager.getCurrentTag(this);
+        int checkedId;
+        if (LanguageManager.PORTUGUESE.equals(saved)
+                && LanguageManager.PORTUGUESE.equals(current)) {
+            checkedId = R.id.nav_language_pt;
+        } else if (LanguageManager.ENGLISH.equals(saved)
+                && LanguageManager.ENGLISH.equals(current)) {
+            checkedId = R.id.nav_language_en;
+        } else {
+            checkedId = R.id.nav_language_system;
+        }
+        binding.navigationView.setCheckedItem(checkedId);
+    }
+
+    private void openAllActivities() {
+        startActivity(new Intent(this, AllActivitiesActivity.class));
     }
 
     @Override
@@ -115,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        updateLanguageButton();
+        updateLanguageMenu();
         checkUnfinishedSession();
     }
 
@@ -310,52 +390,6 @@ public class MainActivity extends AppCompatActivity {
         return meters;
     }
 
-    private void updateLanguageButton() {
-        String tag = LanguageManager.getCurrentTag(this);
-        binding.languageButton.setText(
-                LanguageManager.PORTUGUESE.equals(tag)
-                        ? R.string.language_code_pt
-                        : R.string.language_code_en
-        );
-        binding.languageButton.setContentDescription(getString(R.string.language_button));
-    }
-
-    private void showLanguageDialog() {
-        String saved = LanguageManager.getSavedTag(this);
-        String current = LanguageManager.getCurrentTag(this);
-        int checked;
-        if (LanguageManager.PORTUGUESE.equals(saved)
-                && LanguageManager.PORTUGUESE.equals(current)) {
-            checked = 2;
-        } else if (LanguageManager.ENGLISH.equals(saved)
-                && LanguageManager.ENGLISH.equals(current)) {
-            checked = 1;
-        } else {
-            checked = 0;
-        }
-        String[] labels = {
-                getString(R.string.language_system),
-                getString(R.string.language_english),
-                getString(R.string.language_portuguese)
-        };
-
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.language_title)
-                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
-                    dialog.dismiss();
-                    String tag;
-                    if (which == 2) {
-                        tag = LanguageManager.PORTUGUESE;
-                    } else if (which == 1) {
-                        tag = LanguageManager.ENGLISH;
-                    } else {
-                        tag = LanguageManager.SYSTEM;
-                    }
-                    LanguageManager.setLanguage(this, tag);
-                })
-                .show();
-    }
-
     private void openDetail(SessionEntity session) {
         Intent intent = new Intent(this, SessionDetailActivity.class);
         intent.putExtra(SessionDetailActivity.EXTRA_SESSION_ID, session.id);
@@ -373,51 +407,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void confirmDelete(SessionEntity session) {
-        if (session == null) {
-            return;
-        }
-        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.delete_activity_title)
-                .setMessage(R.string.delete_activity_message)
-                .setNegativeButton(R.string.button_cancel, null)
-                .setPositiveButton(
-                        R.string.delete_activity,
-                        (d, which) -> deleteSession(session)
-                )
-                .show();
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
-                ContextCompat.getColor(this, R.color.error)
-        );
-    }
-
-    private void deleteSession(SessionEntity session) {
-        final String id = session.id;
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            try {
-                repository.deleteSession(id);
-                runOnUiThread(() -> {
-                    if (isFinishing() || isDestroyed()) {
-                        return;
-                    }
-                    Toast.makeText(
-                            this,
-                            R.string.activity_deleted,
-                            Toast.LENGTH_SHORT
-                    ).show();
-                });
-            } catch (Exception error) {
-                runOnUiThread(() -> {
-                    if (isFinishing() || isDestroyed()) {
-                        return;
-                    }
-                    Toast.makeText(
-                            this,
-                            R.string.delete_error,
-                            Toast.LENGTH_SHORT
-                    ).show();
-                });
-            }
-        });
+        SessionDeleteDialog.confirm(this, repository, session);
     }
 
     private void showBackupPassphraseDialog(boolean export, Uri importUri) {
@@ -575,8 +565,16 @@ public class MainActivity extends AppCompatActivity {
 
     private void setBackupBusy(boolean busy) {
         backupBusy = busy;
-        binding.buttonBackupExport.setEnabled(!busy);
-        binding.buttonBackupImport.setEnabled(!busy);
+        android.view.MenuItem export = binding.navigationView.getMenu()
+                .findItem(R.id.nav_backup_export);
+        android.view.MenuItem restore = binding.navigationView.getMenu()
+                .findItem(R.id.nav_backup_import);
+        if (export != null) {
+            export.setEnabled(!busy);
+        }
+        if (restore != null) {
+            restore.setEnabled(!busy);
+        }
     }
 
     private void clearPendingPassphrase() {
@@ -595,7 +593,8 @@ public class MainActivity extends AppCompatActivity {
             showRecoveryDialog(unfinishedSession);
             return;
         }
-        OpenRunApp app = (OpenRunApp) getApplication();        TrackingSnapshot current = app.getTrackingStateHolder().getCurrentSnapshot();
+        OpenRunApp app = (OpenRunApp) getApplication();
+        TrackingSnapshot current = app.getTrackingStateHolder().getCurrentSnapshot();
         if (current == null || !current.isActive()) {
             // A previous summary may still be pending. Starting a new activity
             // from the home screen should not reopen that old dialog.

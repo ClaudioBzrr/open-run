@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_language"
+        android:icon="@drawable/ic_language"
+        android:title="@string/language_title">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/nav_language_system"
+                    android:title="@string/language_system" />
+                <item
+                    android:id="@+id/nav_language_en"
+                    android:title="@string/language_english" />
+                <item
+                    android:id="@+id/nav_language_pt"
+                    android:title="@string/language_portuguese" />
+            </group>
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/nav_all_activities"
+        android:icon="@drawable/ic_list"
+        android:title="@string/all_activities" />
+
+    <item
+        android:id="@+id/nav_backup_export"
+        android:icon="@drawable/ic_export"
+        android:title="@string/drawer_backup_export" />
+
+    <item
+        android:id="@+id/nav_backup_import"
+        android:icon="@drawable/ic_import"
+        android:title="@string/drawer_backup_import" />
+</menu>

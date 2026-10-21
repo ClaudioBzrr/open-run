@@ -8,7 +8,7 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the `0.6.0` local-first slice:
+This is the `0.6.1` local-first slice:
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
@@ -16,7 +16,9 @@ This is the `0.6.0` local-first slice:
 - Pause / resume / finish, with persisted pause intervals
 - Room persistence for sessions, track points, pauses and kilometre splits
 - Crash/session recovery: resume an unfinished activity or finish/discard it
-- History list on the home screen with swipe-to-delete
+- Side drawer with language selection, all activities and encrypted backup actions
+- Home screen with the 3 most recent activities and **View all**
+- Dedicated all-activities screen with swipe-to-delete
 - Activity detail screen with a rounded route map, start/end times and total duration
 - Pace and elevation performance charts derived from exact moving time
 - Kilometre splits list with persisted durations and pace
@@ -30,6 +32,17 @@ This is the `0.6.0` local-first slice:
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
 
+New in 0.6.1:
+
+- A navigation drawer replaces the language chip. It contains system/English/
+  Portuguese language choices, a link to the complete activity history, and
+  **Export encrypted backup** / **Restore encrypted backup** actions.
+- The home screen now shows at most the three most recent activities. A
+  **View all** action opens the dedicated history screen.
+- The dedicated **All activities** screen uses the same swipe-to-delete
+  behavior and opens the existing activity detail screen.
+- Backup import/export moved out of the long home feed and into the drawer.
+
 New in 0.6.0:
 
 - Session recovery. If the process or service dies during a recording, the
@@ -41,7 +54,7 @@ New in 0.6.0:
 - GPX 1.1 and Garmin FIT export from the activity export menu. FIT uses the
   official Garmin SDK and includes records, laps, session and activity
   messages.
-- Encrypted backup/restore on the home screen. The `.runbackup` file contains
+- Encrypted backup/restore from the navigation drawer. The `.runbackup` file contains
   finished sessions, points, pauses and splits, encrypted with a
   passphrase-derived AES-256-GCM key. Salt and nonce are per export; the
   passphrase is never stored. Import merges newer sessions by UUID.
@@ -260,20 +273,25 @@ Play Services.
    start/end markers, start/end times and total duration.
 8. Confirm that the pace and elevation charts are drawn below the details.
 9. Go back home and tap the saved activity. The same detail screen must open.
-10. Confirm that the **Splits** card lists each kilometre with duration and pace.
-11. Change the app language using the **EN/PT** chip in the header. The UI must
-    switch immediately and survive an app restart.
-12. Open the activity detail and use **Share**. The generated card must show the
+10. Confirm that the home screen shows at most three recent activities and that
+    **View all** opens the complete **All activities** screen, including
+    swipe-to-delete.
+11. Open the drawer from the menu button and select **All activities**. Confirm
+    that the complete history is listed.
+12. Confirm that the **Splits** card lists each kilometre with duration and pace.
+13. Change the app language from the drawer. The UI must switch immediately and
+    survive an app restart; the selected language must be checked in the drawer.
+14. Open the activity detail and use **Share**. The generated card must show the
     route, start/end markers, start/end times, duration and stats.
-13. Use **Save image** and choose a destination in the system file picker.
-14. Use **Export** and save **PDF**, **Excel**, **GPX** and **Garmin FIT**. Check
+15. Use **Save image** and choose a destination in the system file picker.
+16. Use **Export** and save **PDF**, **Excel**, **GPX** and **Garmin FIT**. Check
     the GPX in any GPX viewer and the FIT in Garmin Connect/Strava or a FIT
     parser.
-15. Use the trash icon in the detail toolbar to delete an activity. Confirm that
+17. Use the trash icon in the detail toolbar to delete an activity. Confirm that
     it disappears from the history after returning home.
-16. Export an encrypted backup in the home screen **Encrypted backup** card,
-    restore it with the correct passphrase, and confirm the activity returns.
-    A wrong passphrase must show an error and must not change the database.
+18. Export an encrypted backup from the drawer, restore it with the correct
+    passphrase, and confirm the activity returns. A wrong passphrase must show
+    an error and must not change the database.
 17. Force-stop the app during a session and reopen it. The recovery dialog must
     offer **Resume**, **Finish and save** and **Discard**. Resume must restore
     the route, moving time, splits and pause state.
@@ -297,8 +315,9 @@ app/
   tracking/                 Foreground service, FusedLocation, state holder,
                             barometer and recovery policy
   ui/                       MainActivity, RecordActivity,
-                            SessionDetailActivity, PerformanceChartView,
-                            history adapter
+                            SessionDetailActivity, AllActivitiesActivity,
+                            PerformanceChartView, history adapter,
+                            shared delete dialog
   util/                     Formatting, in-app language selection,
                             PerformanceSeriesBuilder, ShareCardGenerator,
                             SessionPdfWriter, SessionXlsxWriter,
@@ -387,8 +406,8 @@ All user-facing text lives in resources:
 - `app/src/main/res/values/strings.xml` — English (default)
 - `app/src/main/res/values-pt/strings.xml` — Portuguese
 
-Language can be changed inside the app using the **EN/PT** chip in the home
-header. The dialog offers system default, English and Portuguese. On Android
+Language can be changed inside the app from the navigation drawer. The
+language submenu offers system default, English and Portuguese. On Android
 13+ the choice is persisted by the platform per-app language mechanism; on
 older versions the choice is stored in app preferences and applied on startup.
 

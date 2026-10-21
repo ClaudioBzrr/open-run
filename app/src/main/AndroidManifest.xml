@@ -42,6 +42,10 @@
             android:name=".ui.SessionDetailActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.AllActivitiesActivity"
+            android:exported="false" />
+
         <service
             android:name=".tracking.TrackingService"
             android:exported="false"

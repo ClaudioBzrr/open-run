@@ -8,8 +8,12 @@
     <string name="start_walk">Start a walk</string>
     <string name="start_run_subtitle">Track pace, distance and splits</string>
     <string name="start_walk_subtitle">A relaxed outdoor walk</string>
-    <string name="history_title">Recent activity</string>
+    <string name="history_title">Activities</string>
     <string name="history_empty">No activities yet. Your first one starts above.</string>
+    <string name="view_all">View all</string>
+    <string name="all_activities">All activities</string>
+    <string name="all_activities_empty">No activities yet.</string>
+    <string name="open_menu">Open menu</string>
 
     <string name="activity_run">Run</string>
     <string name="activity_walk">Walk</string>
@@ -128,6 +132,8 @@
     <string name="backup_subtitle">Export or restore a local .runbackup file. Your passphrase is never stored.</string>
     <string name="backup_export">Export</string>
     <string name="backup_import">Restore</string>
+    <string name="drawer_backup_export">Export encrypted backup</string>
+    <string name="drawer_backup_import">Restore encrypted backup</string>
     <string name="backup_passphrase_title">Backup passphrase</string>
     <string name="backup_passphrase_message">Use at least 8 characters. The passphrase is not stored and cannot be recovered.</string>
     <string name="backup_passphrase_hint">Passphrase</string>
