@@ -36,9 +36,7 @@ jobs:
           disable-animations: true
           script: |
             chmod +x gradlew
-            ./gradlew :app:connectedDebugAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.class=com.openrun.app.ui.DemoDataTest \
-              --stacktrace
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openrun.app.ui.DemoDataTest --stacktrace
             bash scripts/capture-screenshots.sh
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
