@@ -12,7 +12,7 @@ public final class TrackFilter {
     private static final double MIN_SEGMENT_METERS = 1.5d;
     private static final double MAX_DYNAMIC_THRESHOLD_METERS = 12.0d;
     private static final double ACCURACY_THRESHOLD_FACTOR = 0.35d;
-    private static final double STATIONARY_SPEED_MPS = 0.35d;
+    private static final double SPEED_CONFIRMS_MOVEMENT_MPS = 0.8d;
     private static final double STATIONARY_ACCURACY_FACTOR = 0.8d;
     private static final double MIN_STATIONARY_RADIUS_METERS = 10.0d;
     private static final double MAX_STATIONARY_RADIUS_METERS = 20.0d;
@@ -28,14 +28,17 @@ public final class TrackFilter {
 
     public boolean accept(RawFix fix, boolean ignoreAccuracy) {
         if (fix == null || !fix.hasValidCoordinate()) {
+            clearPending();
             return false;
         }
         if (!ignoreAccuracy) {
             if (!fix.hasAccuracy() || fix.getAccuracyMeters() > config.getMaxAccuracyMeters()) {
+                clearPending();
                 return false;
             }
         }
         if (fix.hasSpeed() && fix.getSpeedMps() > config.getMaxSpeedMps()) {
+            clearPending();
             return false;
         }
         if (lastAccepted == null) {
@@ -63,34 +66,33 @@ public final class TrackFilter {
         }
 
         // Doppler speed is usually much better than position-derived speed for
-        // distinguishing a stationary phone from slow walking. Keep the anchor
-        // fixed while the receiver reports near-zero speed, so multipath jitter
-        // cannot accumulate as distance. A large displacement still wins over
-        // a bad speed flag.
-        if (fix.hasSpeed()
-                && fix.getSpeedMps() < STATIONARY_SPEED_MPS
-                && distance < stationaryRadiusMeters(fix)) {
-            clearPending();
-            return false;
-        }
-
+        // distinguishing a stationary phone from slow walking. Without a
+        // confirming speed, do not move the anchor until the fix has clearly
+        // left the current accuracy radius. This is the deadband that prevents
+        // multipath jitter from becoming a wandering route.
         double impliedSpeed = distance / (deltaMs / 1000.0d);
         if (impliedSpeed > config.getMaxSpeedMps()) {
             clearPending();
             return false;
         }
 
-        // When speed is unavailable or ambiguous, require three consistent
-        // fixes beyond the noise threshold before moving the anchor. Isolated
-        // multipath jumps are therefore ignored instead of becoming fake
-        // segments.
         boolean speedConfirmsMovement = fix.hasSpeed()
-                && fix.getSpeedMps() >= 1.0d;
+                && fix.getSpeedMps() >= SPEED_CONFIRMS_MOVEMENT_MPS;
+        if (!speedConfirmsMovement
+                && distance < stationaryRadiusMeters(fix)) {
+            clearPending();
+            return false;
+        }
+
         if (speedConfirmsMovement) {
             clearPending();
             lastAccepted = fix;
             return true;
         }
+
+        // With no reliable speed, require three consistent fixes beyond the
+        // deadband. Isolated multipath jumps are therefore ignored instead of
+        // becoming fake segments.
         if (pending == null) {
             pending = fix;
             pendingConfirmationCount = 1;

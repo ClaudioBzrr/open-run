@@ -90,21 +90,27 @@ public class TrackFilterTest {
                 false
         ));
 
-        latitude += 3.0d / METERS_PER_DEGREE_LAT;
+        latitude += 4.0d / METERS_PER_DEGREE_LAT;
         assertFalse(filter.accept(
                 fix(latitude, 5.0d, Double.NaN, 1),
                 false
         ));
 
-        latitude += 1.0d / METERS_PER_DEGREE_LAT;
+        latitude += 8.0d / METERS_PER_DEGREE_LAT;
         assertFalse(filter.accept(
                 fix(latitude, 5.0d, Double.NaN, 2),
                 false
         ));
 
         latitude += 1.0d / METERS_PER_DEGREE_LAT;
-        assertTrue(filter.accept(
+        assertFalse(filter.accept(
                 fix(latitude, 5.0d, Double.NaN, 3),
+                false
+        ));
+
+        latitude += 1.0d / METERS_PER_DEGREE_LAT;
+        assertTrue(filter.accept(
+                fix(latitude, 5.0d, Double.NaN, 4),
                 false
         ));
     }
