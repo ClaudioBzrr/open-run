@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://claudiobzrr.github.io/open-run/sitemap.xml

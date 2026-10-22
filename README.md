@@ -3,6 +3,8 @@
 [![Latest release](https://img.shields.io/github/v/release/ClaudioBzrr/open-run?label=download)](https://github.com/ClaudioBzrr/open-run/releases/latest)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=github&logoColor=white)](https://github.com/sponsors/ClaudioBzrr)
 
+[Website and screenshots](https://claudiobzrr.github.io/open-run/) · [Source](https://github.com/ClaudioBzrr/open-run)
+
 A local-first Android app for recording walks and runs. Java + XML Views, no
 Compose, no backend and no account.
 

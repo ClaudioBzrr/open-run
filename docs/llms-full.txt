@@ -1,0 +1,68 @@
+# Open Run — detailed project context
+
+Open Run is a free Android application for recording running and walking activities. It is designed for people who want a focused tracker without an account, social feed, subscription or cloud dependency.
+
+## Product summary
+
+Open Run records location fixes through a foreground service using Google Play Services' fused location provider at high accuracy and a one-second target interval. Accepted points are stored in a local Room database. A foreground notification keeps the recording visible and provides pause, resume and finish actions.
+
+The app shows a live recording screen, a home screen with the three most recent activities, a navigation drawer, a complete activity history, and a detailed activity screen with an OpenStreetMap route, pace chart, elevation chart and kilometre splits.
+
+## Privacy model
+
+- Activity data is stored in the app-private Room database.
+- There is no login, account, cloud sync, advertising SDK or analytics SDK.
+- The app does not upload recorded tracks.
+- OpenStreetMap tiles are downloaded when a map is visible, revealing the viewed tile area to the tile provider as with any online map.
+- GPX, FIT, PDF, XLSX and PNG exports are created only when the user explicitly exports them.
+- `.runbackup` archives are encrypted locally. The passphrase is not stored.
+
+## Tracking and accuracy
+
+The tracking engine is a platform-independent Java module in `core/`. It is covered by JVM tests for distance math, filters, state transitions, pause handling, splits, route smoothing and restore.
+
+The location filter rejects:
+- missing or invalid coordinates;
+- horizontal accuracy worse than the activity threshold;
+- impossible implied speed;
+- duplicate or stale timestamps;
+- stationary GPS jitter.
+
+Stationary filtering uses:
+- Doppler speed when available;
+- an accuracy-scaled deadband;
+- three consistent fixes when speed is unavailable or ambiguous;
+- a maximum accepted location age of two seconds.
+
+Barometric altitude is calibrated from the first valid GPS altitude and preferred over GPS altitude. The detail map and share card apply display-only route smoothing; raw accepted points remain the source of truth for distance and GPX/FIT export.
+
+## Session recovery
+
+If the process or service dies during a recording, the unfinished session remains in Room. On the next launch, the app offers Resume, Finish and save, or Discard. Resume restores points, distance, pauses, splits and paused state. Sessions are only auto-resumed when they belong to the current boot; after a reboot the user explicitly chooses save or discard.
+
+## Exports and backups
+
+- GPX 1.1 for mapping and training services.
+- Garmin FIT with records, laps, session and activity messages.
+- PDF report with route sketch, statistics and charts.
+- XLSX workbook with summary and track points.
+- PNG share card with route and statistics.
+- `.runbackup` encrypted local archive containing finished sessions, points, pauses and splits.
+
+## Technology
+
+- Java + XML Views, no Compose.
+- Android Gradle Plugin 8.7.3, minSdk 26, targetSdk 34.
+- Room 2.6.1 with a non-destructive schema 2 to 3 migration.
+- Google Play Services fused location 21.3.0.
+- osmdroid + OpenStreetMap tiles.
+- Official Garmin FIT SDK 21.176.0.
+- GitHub Actions for unit tests, lint, instrumented emulator tests and signed releases.
+
+## Links
+
+- Website: https://claudiobzrr.github.io/open-run/
+- Repository: https://github.com/ClaudioBzrr/open-run
+- Releases: https://github.com/ClaudioBzrr/open-run/releases
+- Issues: https://github.com/ClaudioBzrr/open-run/issues
+- llms.txt: https://claudiobzrr.github.io/open-run/llms.txt

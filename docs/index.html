@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open Run — Local-first GPS running & walking tracker for Android</title>
+  <meta name="description" content="Open Run is a free, local-first Android app for running and walking. Accurate GPS tracks, exact splits, session recovery, GPX/FIT export and encrypted backups. No account, no cloud, no subscription.">
+  <meta name="author" content="Claudio Bzrr">
+  <meta name="theme-color" content="#0b6e4f">
+  <link rel="canonical" href="https://claudiobzrr.github.io/open-run/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Open Run">
+  <meta property="og:title" content="Open Run — Your run. Your data. No cloud required.">
+  <meta property="og:description" content="A local-first Android running and walking tracker with accurate GPS, exact splits, GPX/FIT export and encrypted local backups.">
+  <meta property="og:url" content="https://claudiobzrr.github.io/open-run/">
+  <meta property="og:image" content="https://claudiobzrr.github.io/open-run/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Open Run app screens on a green background">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Open Run — Local-first running & walking tracker">
+  <meta name="twitter:description" content="Accurate GPS, exact splits, encrypted backups and no account. Free Android app.">
+  <meta name="twitter:image" content="https://claudiobzrr.github.io/open-run/assets/og-image.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Open Run",
+    "alternateName": "Open Run Android running tracker",
+    "description": "Open Run is a free, local-first Android app for recording runs and walks. It stores activities on the device, supports exact pauses and splits, GPX/FIT/PDF/XLSX exports, encrypted .runbackup files and unfinished-session recovery.",
+    "applicationCategory": "HealthApplication",
+    "applicationSubCategory": "Running and walking tracker",
+    "operatingSystem": "Android 8.0 or newer",
+    "softwareVersion": "0.6.4",
+    "datePublished": "2026-01-01",
+    "dateModified": "2026-10-22",
+    "downloadUrl": "https://github.com/ClaudioBzrr/open-run/releases/latest/download/app-release.apk",
+    "installUrl": "https://github.com/ClaudioBzrr/open-run/releases/latest/download/app-release.apk",
+    "codeRepository": "https://github.com/ClaudioBzrr/open-run",
+    "url": "https://claudiobzrr.github.io/open-run/",
+    "image": "https://claudiobzrr.github.io/open-run/assets/og-image.png",
+    "author": {
+      "@type": "Person",
+      "name": "Claudio Bzrr",
+      "url": "https://github.com/ClaudioBzrr"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL",
+      "availability": "https://schema.org/InStock"
+    },
+    "featureList": [
+      "Local-first GPS running and walking tracker",
+      "Doppler and barometer-assisted tracking",
+      "Exact pauses and kilometre splits",
+      "GPX, FIT, PDF and XLSX export",
+      "Encrypted local .runbackup files",
+      "Unfinished session recovery",
+      "English and Portuguese interface",
+      "No account and no subscription"
+    ],
+    "inLanguage": ["en", "pt-BR"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is Open Run free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Open Run is a free Android app with no account, subscription or ads. You can download the signed APK from GitHub Releases."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Open Run work offline?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Recording, history, splits, backup and exports work offline. The activity map and share card download OpenStreetMap tiles when an internet connection is available."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where is my activity data stored?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sessions, GPS points, pauses and splits are stored in an app-private Room database on the Android device. Open Run has no account or cloud sync. Exported GPX, FIT, PDF, XLSX and .runbackup files are created only when you choose to export them."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I export activities to Garmin, Strava or other apps?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Open Run exports GPX 1.1 and Garmin FIT files, plus PDF reports, Excel workbooks and PNG share cards. GPX and FIT files can be imported by services that support those formats."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Open Run on the Google Play Store?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Not yet. Open Run is distributed as a signed APK through GitHub Releases."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What Android version is required?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Open Run requires Android 8.0 (API 26) or newer and Google Play Services for high-accuracy fused location."
+        }
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Open Run",
+        "item": "https://claudiobzrr.github.io/open-run/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="Open Run home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 108 108" role="img"><path d="M28 60c0-6 4-10 12-12l12-3c4-5 8-7 12-7 5 0 8 4 9 9l5 2c3 1 5 5 5 8v3H28Z"/><path d="M30 62c0 4 4 7 10 7h34c4 0 6-3 6-7"/><path d="m46 50 10-4M48 55l10-4M50 60l10-4"/></svg>
+        </span>
+        <span>Open Run</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="#features">Features</a>
+        <a href="#screens">Screens</a>
+        <a href="#accuracy">Accuracy</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#faq">FAQ</a>
+        <a class="nav-github" href="https://github.com/ClaudioBzrr/open-run" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
+        <a class="button button-small" href="https://github.com/ClaudioBzrr/open-run/releases/latest/download/app-release.apk">Download APK</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-glow hero-glow-one" aria-hidden="true"></div>
+      <div class="hero-glow hero-glow-two" aria-hidden="true"></div>
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> Local-first Android tracker · v0.6.4</p>
+          <h1>Your run.<br>Your data.<br><em>No cloud required.</em></h1>
+          <p class="lede">Open Run records runs and walks with high-accuracy GPS, exact splits and zero account setup. Every activity stays on your phone — ready to export whenever you want.</p>
+          <div class="hero-actions">
+            <a class="button" href="https://github.com/ClaudioBzrr/open-run/releases/latest/download/app-release.apk">Download for Android <span aria-hidden="true">↓</span></a>
+            <a class="button button-ghost" href="https://github.com/ClaudioBzrr/open-run" rel="noopener">View source <span aria-hidden="true">↗</span></a>
+          </div>
+          <ul class="trust-list" aria-label="Product highlights">
+            <li>Free, signed APK</li>
+            <li>No account</li>
+            <li>No subscription</li>
+            <li>Android 8+</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual" aria-label="Open Run home and activity detail screens">
+          <div class="phone phone-back">
+            <img src="assets/screenshots/03-detail.png" alt="Open Run activity detail screen with route map, distance, pace, elevation and activity statistics" width="1080" height="2400" loading="eager">
+          </div>
+          <div class="phone phone-front">
+            <img src="assets/screenshots/01-home.png" alt="Open Run home screen with start run and start walk cards, recent activities and navigation menu" width="1080" height="2400" loading="eager">
+          </div>
+          <div class="floating-note note-pace" aria-hidden="true">
+            <span class="note-value">6.45</span>
+            <span class="note-label">km demo run</span>
+          </div>
+          <div class="floating-note note-local" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.6 3 8.6 7 10 4-1.4 7-5.4 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+            <span>Stored on device</span>
+          </div>
+        </div>
+      </div>
+      <div class="container hero-foot">
+        <p>Built for runners who want ownership, not another social feed.</p>
+        <a href="#screens">See the screens <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">What's inside</p>
+          <h2>Everything a run needs.<br><span>Nothing it doesn't.</span></h2>
+          <p>Open Run focuses on the essentials: recording, understanding and owning your activity data.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card feature-card-wide">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="19" cy="17" r="2"/></svg>
+            </div>
+            <h3>Local-first by design</h3>
+            <p>Sessions, GPS points, pauses and splits live in an app-private database. There is no account to create, no sync server and no advertising profile.</p>
+            <span class="tag">Privacy</span>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>
+            </div>
+            <h3>Accuracy-aware GPS</h3>
+            <p>Doppler speed, accuracy-scaled deadbands and multi-fix confirmation keep stationary jitter out of your route and distance.</p>
+            <span class="tag">GPS</span>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3 19h18"/></svg>
+            </div>
+            <h3>Exact splits and pauses</h3>
+            <p>Every accepted point stores its moving elapsed time. Kilometre splits use that clock, so pauses never distort your pace.</p>
+            <span class="tag">Training</span>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+            </div>
+            <h3>Export anywhere</h3>
+            <p>GPX for any map or training service, FIT for Garmin, PDF for a readable report, XLSX for your own analysis and PNG for sharing.</p>
+            <span class="tag">Data ownership</span>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            </div>
+            <h3>Encrypted backup</h3>
+            <p>Create a portable <code>.runbackup</code> file protected with PBKDF2 and AES-256-GCM. Restore on another install without a cloud account.</p>
+            <span class="tag">Backup</span>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/></svg>
+            </div>
+            <h3>Resume unfinished runs</h3>
+            <p>If Android stops the process, the session remains in Room. Reopen the app to resume, finish and save, or discard it.</p>
+            <span class="tag">Reliability</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-screens" id="screens">
+      <div class="container">
+        <div class="section-heading section-heading-row">
+          <div>
+            <p class="eyebrow">Made for the phone in your hand</p>
+            <h2>Clear at a glance.</h2>
+          </div>
+          <p>A focused interface for starting a run, reading the map, reviewing splits and finding every past activity.</p>
+        </div>
+
+        <div class="screens-grid">
+          <figure class="screen-card">
+            <div class="phone phone-small">
+              <img src="assets/screenshots/01-home.png" alt="Open Run home screen with the menu button on the left, start run and walk cards, and three recent activities" width="1080" height="2400" loading="lazy">
+            </div>
+            <figcaption><strong>Home</strong><span>Start a run, a walk or reopen a recent activity.</span></figcaption>
+          </figure>
+          <figure class="screen-card">
+            <div class="phone phone-small">
+              <img src="assets/screenshots/02-drawer.png" alt="Open Run navigation drawer with language, all activities and encrypted backup actions" width="1080" height="2400" loading="lazy">
+            </div>
+            <figcaption><strong>Navigation drawer</strong><span>Language, the complete history and encrypted backup tools.</span></figcaption>
+          </figure>
+          <figure class="screen-card">
+            <div class="phone phone-small">
+              <img src="assets/screenshots/03-detail.png" alt="Open Run activity detail with route map, distance, pace, elevation, start and end times" width="1080" height="2400" loading="lazy">
+            </div>
+            <figcaption><strong>Activity detail</strong><span>Route, moving time, pace, elevation and exact kilometre splits.</span></figcaption>
+          </figure>
+          <figure class="screen-card">
+            <div class="phone phone-small">
+              <img src="assets/screenshots/04-all-activities.png" alt="Open Run all activities screen showing the recent four activities with a view all action" width="1080" height="2400" loading="lazy">
+            </div>
+            <figcaption><strong>All activities</strong><span>The four most recent by default; expand to the full history.</span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="accuracy">
+      <div class="container split-grid">
+        <div>
+          <p class="eyebrow eyebrow-light">GPS without the noise</p>
+          <h2>A stationary phone<br>should look stationary.</h2>
+          <p class="lede-light">GPS drift is normal. Turning that drift into fake distance is not. Open Run filters location fixes before they reach the track.</p>
+          <a class="button button-light" href="https://github.com/ClaudioBzrr/open-run/blob/main/core/src/main/java/com/openrun/core/stats/TrackFilter.java" rel="noopener">Read the filter <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="accuracy-list">
+          <div class="accuracy-item">
+            <span class="accuracy-number">01</span>
+            <div><h3>Doppler speed</h3><p>Near-zero speed keeps the position anchor fixed instead of accepting multipath jumps as real movement.</p></div>
+          </div>
+          <div class="accuracy-item">
+            <span class="accuracy-number">02</span>
+            <div><h3>Accuracy-scaled deadband</h3><p>The movement threshold grows with reported GPS accuracy, so a 20 m fix cannot create a 2 m segment.</p></div>
+          </div>
+          <div class="accuracy-item">
+            <span class="accuracy-number">03</span>
+            <div><h3>Multi-fix confirmation</h3><p>When speed is ambiguous, three consistent fixes are required before a new segment is committed.</p></div>
+          </div>
+          <div class="accuracy-item">
+            <span class="accuracy-number">04</span>
+            <div><h3>Barometer-assisted elevation</h3><p>Pressure altitude is calibrated from the first valid GPS altitude and preferred over noisy GPS elevation.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="data">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Data ownership</p>
+          <h2>Keep the files.<br><span>Keep the memories.</span></h2>
+          <p>No lock-in. Take your activities to other tools or keep an encrypted copy of everything.</p>
+        </div>
+        <div class="data-grid">
+          <article class="data-card">
+            <p class="data-kicker">Open formats</p>
+            <h3>GPX &amp; FIT</h3>
+            <p>Use your activities in mapping software, Garmin Connect, Strava or any tool that reads GPX or FIT.</p>
+          </article>
+          <article class="data-card">
+            <p class="data-kicker">Readable reports</p>
+            <h3>PDF &amp; XLSX</h3>
+            <p>Export a printable activity report or a workbook containing the summary and every captured track point.</p>
+          </article>
+          <article class="data-card">
+            <p class="data-kicker">Encrypted archive</p>
+            <h3>.runbackup</h3>
+            <p>A passphrase-protected local archive of finished sessions, points, pauses and splits. Import it on another install.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-glance" id="glance">
+      <div class="container glance-grid">
+        <div>
+          <p class="eyebrow">At a glance</p>
+          <h2>Small app.<br>Serious tracking.</h2>
+          <p class="glance-copy">Open Run is built with Java, Android Views and Room. The core tracking engine is platform-independent and covered by JVM tests; instrumented tests cover the database, encrypted backup and main screens.</p>
+          <a class="text-link" href="https://github.com/ClaudioBzrr/open-run" rel="noopener">Explore the repository <span aria-hidden="true">→</span></a>
+        </div>
+        <dl class="fact-list">
+          <div><dt>Platform</dt><dd>Android 8.0+</dd></div>
+          <div><dt>Price</dt><dd>Free</dd></div>
+          <div><dt>Account</dt><dd>Not required</dd></div>
+          <div><dt>Cloud sync</dt><dd>None</dd></div>
+          <div><dt>Exports</dt><dd>GPX · FIT · PDF · XLSX · PNG</dd></div>
+          <div><dt>Backup</dt><dd>AES-256-GCM</dd></div>
+          <div><dt>Languages</dt><dd>English · Português</dd></div>
+          <div><dt>Version</dt><dd>0.6.4</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">How it works</p>
+          <h2>From pocket to personal record.</h2>
+        </div>
+        <ol class="steps">
+          <li><span>01</span><div><h3>Start</h3><p>Grant precise location and notifications, then choose run or walk.</p></div></li>
+          <li><span>02</span><div><h3>Move</h3><p>The foreground service records accepted points, pauses and splits while the screen is off.</p></div></li>
+          <li><span>03</span><div><h3>Keep it</h3><p>Review the map and charts, then export, share or create an encrypted backup.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section section-privacy" id="privacy">
+      <div class="container split-grid">
+        <div>
+          <p class="eyebrow">Privacy by architecture</p>
+          <h2>No account.<br>No analytics.<br>No cloud sync.</h2>
+        </div>
+        <div class="privacy-copy">
+          <p>Your activity database is private to the app. Open Run does not create a profile, upload your track or require a login.</p>
+          <ul class="check-list">
+            <li>Activity storage: app-private Room database</li>
+            <li>Location data: never uploaded by the app</li>
+            <li>Maps: OpenStreetMap tiles downloaded when online</li>
+            <li>Backups: encrypted locally, passphrase never stored</li>
+            <li>Exports: created only when you choose them</li>
+          </ul>
+          <p class="small-print">Map tiles reveal the area you view to the tile provider, as with any online map. The recorded track is not uploaded as a file.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="container faq-layout">
+        <div>
+          <p class="eyebrow">Questions, answered</p>
+          <h2>Open Run FAQ</h2>
+          <p class="faq-intro">The short answers for runners, walkers and anyone evaluating the app.</p>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Is Open Run free?</summary>
+            <p>Yes. There is no account, subscription or advertising SDK. Download the signed APK directly from GitHub Releases.</p>
+          </details>
+          <details>
+            <summary>Does it work offline?</summary>
+            <p>Recording, history, splits, backups and exports work offline. Map tiles and the share-card map background need an internet connection; without them, the route is drawn on a clean background.</p>
+          </details>
+          <details>
+            <summary>Where is my data stored?</summary>
+            <p>Sessions, points, pauses and splits are stored in an app-private Room database on the device. Open Run has no cloud sync. GPX, FIT, PDF, XLSX and .runbackup files are created only when you export them.</p>
+          </details>
+          <details>
+            <summary>Can I import activities into Garmin, Strava or Komoot?</summary>
+            <p>Open Run exports standard GPX 1.1 and Garmin FIT files. Any service that supports those formats can import them.</p>
+          </details>
+          <details>
+            <summary>Is it on the Play Store?</summary>
+            <p>Not yet. Releases are distributed as signed APKs on GitHub. Android may ask you to allow installation from your browser or file manager the first time.</p>
+          </details>
+          <details>
+            <summary>Which Android versions are supported?</summary>
+            <p>Android 8.0 (API 26) or newer. Google Play Services is required for high-accuracy fused location; maps use OpenStreetMap tiles and do not need a Google Maps API key.</p>
+          </details>
+          <details>
+            <summary>Does it support pauses and auto-pause?</summary>
+            <p>Manual pause and resume are supported and pauses are persisted exactly. Automatic pause exists in the tracking engine but is disabled by default in this release.</p>
+          </details>
+          <details>
+            <summary>What happens if the app is closed mid-run?</summary>
+            <p>The unfinished session remains in the local database. Reopening the app offers Resume, Finish and save, or Discard. Resume restores points, pauses, distance and splits.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="download" id="download">
+      <div class="container download-inner">
+        <div>
+          <p class="eyebrow eyebrow-light">Ready when you are</p>
+          <h2>Download Open Run.</h2>
+          <p>Free, signed and local-first. Android 8.0+ with Google Play Services.</p>
+        </div>
+        <div class="download-actions">
+          <a class="button button-light button-large" href="https://github.com/ClaudioBzrr/open-run/releases/latest/download/app-release.apk">Download APK <span aria-hidden="true">↓</span></a>
+          <a class="download-link" href="https://github.com/ClaudioBzrr/open-run/releases" rel="noopener">Release notes &amp; older versions <span aria-hidden="true">↗</span></a>
+          <span class="download-meta">v0.6.4 · 2.7 MB · arm64 / universal</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="brand brand-footer" href="#top">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 108 108" role="img"><path d="M28 60c0-6 4-10 12-12l12-3c4-5 8-7 12-7 5 0 8 4 9 9l5 2c3 1 5 5 5 8v3H28Z"/><path d="M30 62c0 4 4 7 10 7h34c4 0 6-3 6-7"/><path d="m46 50 10-4M48 55l10-4M50 60l10-4"/></svg>
+          </span>
+          <span>Open Run</span>
+        </a>
+        <p class="footer-note">A local-first running and walking tracker for Android. Built with care for people who prefer to own their data.</p>
+      </div>
+      <div class="footer-links">
+        <div><strong>Project</strong><a href="https://github.com/ClaudioBzrr/open-run" rel="noopener">Source code</a><a href="https://github.com/ClaudioBzrr/open-run/releases" rel="noopener">Releases</a><a href="https://github.com/ClaudioBzrr/open-run/issues" rel="noopener">Issues</a></div>
+        <div><strong>Learn</strong><a href="#features">Features</a><a href="#accuracy">GPS accuracy</a><a href="#privacy">Privacy</a><a href="llms.txt">llms.txt</a></div>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> Open Run · Claudio Bzrr</p>
+      <p>No account. No cloud. Your activities stay on this device.</p>
+    </div>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

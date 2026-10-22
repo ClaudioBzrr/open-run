@@ -1,0 +1,17 @@
+{
+  "name": "Open Run",
+  "short_name": "Open Run",
+  "description": "A local-first Android running and walking tracker.",
+  "start_url": "./",
+  "display": "browser",
+  "background_color": "#f7f5ee",
+  "theme_color": "#0b6e4f",
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
