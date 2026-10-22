@@ -125,6 +125,10 @@ code {
 .site-nav > a:not(.button) { color: var(--ink-soft); text-decoration: none; transition: color .2s ease; }
 .site-nav > a:not(.button):hover { color: var(--brand); }
 .nav-github { display: inline-flex; gap: 4px; align-items: center; }
+.lang-switch { display: inline-flex; align-items: center; padding: 3px; border: 1px solid var(--line); border-radius: 999px; gap: 1px; }
+.lang-switch a { display: inline-block; padding: 3px 8px; border-radius: 999px; color: var(--muted); font-size: .7rem; font-weight: 780; letter-spacing: .04em; text-decoration: none; }
+.lang-switch a[aria-current="page"] { color: var(--ink); background: var(--surface-2); }
+.lang-switch a:hover { color: var(--brand); }
 .nav-toggle { display: none; background: none; border: 0; width: 44px; height: 44px; cursor: pointer; padding: 10px; }
 .nav-toggle span { display: block; width: 24px; height: 2px; margin: 5px auto; background: var(--ink); transition: transform .2s ease, opacity .2s ease; }
 .nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -257,6 +261,7 @@ code {
 .screen-card figcaption { display: flex; flex-direction: column; gap: 3px; padding-inline: 6px; }
 .screen-card figcaption strong { font-size: 1rem; letter-spacing: -.015em; }
 .screen-card figcaption span { color: var(--muted); font-size: .84rem; line-height: 1.45; }
+.screens-note { color: var(--muted); font-size: .8rem; margin-top: 24px; }
 
 /* Dark section */
 .section-dark { background: radial-gradient(circle at 85% 10%, rgba(184,240,214,.16), transparent 35%), #09251b; color: #f4fbf5; }
@@ -358,6 +363,9 @@ code {
   .footer-grid { grid-template-columns: 1fr; gap: 36px; }
   .footer-links { justify-content: flex-start; }
 }
+@media (max-width: 1120px) and (min-width: 761px) {
+  .site-nav { gap: 15px; }
+}
 @media (max-width: 760px) {
   .container { width: min(var(--max), calc(100% - 32px)); }
   .site-header { position: relative; }
@@ -381,6 +389,7 @@ code {
   .site-nav > a:not(.button) { padding: 10px 12px; border-radius: 10px; }
   .site-nav > a:not(.button):hover { background: var(--surface-2); }
   .site-nav .button { margin-top: 6px; }
+  .lang-switch { align-self: flex-start; margin: 6px 12px; }
   .hero { padding-top: 44px; }
   h1 { font-size: clamp(2.85rem, 13vw, 4.5rem); }
   .hero-visual { min-height: 540px; }

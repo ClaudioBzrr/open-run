@@ -32,7 +32,8 @@
 
 ## Best pages
 
-- [Landing page](https://claudiobzrr.github.io/open-run/)
+- [Landing page (English)](https://claudiobzrr.github.io/open-run/)
+- [Landing page (Português, pt-BR)](https://claudiobzrr.github.io/open-run/pt/)
 - [Source code](https://github.com/ClaudioBzrr/open-run)
 - [Latest release](https://github.com/ClaudioBzrr/open-run/releases/latest)
 - [README](https://github.com/ClaudioBzrr/open-run#readme)

@@ -61,7 +61,8 @@ If the process or service dies during a recording, the unfinished session remain
 
 ## Links
 
-- Website: https://claudiobzrr.github.io/open-run/
+- Website (English): https://claudiobzrr.github.io/open-run/
+- Website (Português): https://claudiobzrr.github.io/open-run/pt/
 - Repository: https://github.com/ClaudioBzrr/open-run
 - Releases: https://github.com/ClaudioBzrr/open-run/releases
 - Issues: https://github.com/ClaudioBzrr/open-run/issues
