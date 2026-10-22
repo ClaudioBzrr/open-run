@@ -5,8 +5,16 @@ OUT="docs/assets/screenshots"
 mkdir -p "$OUT"
 
 dump_ui() {
-  adb shell uiautomator dump /sdcard/openrun-window.xml >/dev/null
-  adb pull /sdcard/openrun-window.xml /tmp/openrun-window.xml >/dev/null
+  for attempt in 1 2 3 4 5; do
+    adb shell uiautomator dump --compressed /sdcard/openrun-window.xml >/dev/null 2>&1 || true
+    adb shell cat /sdcard/openrun-window.xml > /tmp/openrun-window.xml 2>/dev/null || true
+    if grep -q '<hierarchy' /tmp/openrun-window.xml 2>/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "Could not read the Android view hierarchy" >&2
+  return 1
 }
 
 coords_for_id() {
