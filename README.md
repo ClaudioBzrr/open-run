@@ -8,7 +8,7 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the `0.6.3` local-first slice:
+This is the `0.6.4` local-first slice:
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
@@ -31,6 +31,10 @@ This is the `0.6.3` local-first slice:
 - English (default) and Portuguese (`values-pt`) resources
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
+
+New in 0.6.4:
+
+- Stationary GPS jitter is now rejected using Doppler speed, an accuracy-scaled movement threshold and short confirmation windows. Stale location fixes older than 2 seconds are ignored.
 
 New in 0.6.3:
 
@@ -360,8 +364,10 @@ gets an iOS sibling.
    `TrackingService` as a foreground service.
 2. The service creates a session row, starts a 1 Hz
    `PRIORITY_HIGH_ACCURACY` request and feeds fixes to `TrackingEngine`.
-3. `TrackFilter` rejects bad accuracy, duplicate timestamps, impossible jumps
-   and sub-0.8 m jitter.
+3. `TrackFilter` rejects bad accuracy, duplicate/stale timestamps, impossible
+   jumps and stationary jitter. The minimum movement threshold scales with
+   accuracy, and Doppler speed keeps a stationary phone from generating a
+   wandering route.
 4. Accepted points are written to Room in order with their moving elapsed
    time. Summaries are persisted every five seconds and on state changes.
 5. Pause/resume writes a pause interval; splits are persisted as each kilometre
@@ -392,8 +398,14 @@ stop/destroy.
 - The session stays in **Finding GPS** until a fix within the accuracy
   threshold arrives. It does not start the stopwatch with a known-bad fix.
 - Distance uses Haversine between accepted points and rejects implied speeds
-  above the activity limit. Segments shorter than 0.8 m are ignored to reduce
-  stationary jitter.
+  above the activity limit. Segments shorter than 1.5 m are ignored, and the
+  threshold grows with reported accuracy.
+- While Doppler speed is near zero, the filter keeps the previous anchor until
+  the displacement is clearly outside the current accuracy radius. When speed
+  is unavailable or ambiguous, three consistent fixes are required; a single
+  multipath jump never becomes a track segment.
+- Location requests reject cached fixes older than two seconds, so a stale
+  position is not mistaken for new movement.
 - A pressure sensor, when present, provides barometric altitude after a GPS
   calibration at the first valid altitude. GPS altitude is the fallback.
 - Doppler speed from the location fix is preferred for live current pace when

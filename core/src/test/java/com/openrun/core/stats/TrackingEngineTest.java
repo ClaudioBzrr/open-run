@@ -173,6 +173,66 @@ public class TrackingEngineTest {
     }
 
     @Test
+    public void stationaryJitterDoesNotAccumulateDistance() {
+        RecordingConfig config = new RecordingConfig(
+                ActivityType.RUN,
+                30,
+                20,
+                15.0d,
+                false
+        );
+        TrackingEngine engine = newEngine(config);
+        double latitude = -23.55d;
+        engine.onFix(stationaryFix(latitude, 5.0d, 0.05d, 0), START_ELAPSED);
+
+        for (int second = 1; second <= 12; second++) {
+            double jitter = ((second % 3) - 1) * 3.0d / METERS_PER_DEGREE_LAT;
+            engine.onFix(
+                    stationaryFix(latitude + jitter, 5.0d, 0.05d, second),
+                    START_ELAPSED + second * 1000L
+            );
+        }
+
+        TrackingSnapshot stationary = engine.snapshot(
+                START_ELAPSED + 12_000L,
+                START_EPOCH + 12_000L
+        );
+        assertEquals(1, stationary.getPointCount());
+        assertEquals(0.0d, stationary.getDistanceMeters(), 0.01d);
+
+        engine.onFix(
+                stationaryFix(
+                        latitude + 10.0d / METERS_PER_DEGREE_LAT,
+                        5.0d,
+                        2.0d,
+                        13
+                ),
+                START_ELAPSED + 13_000L
+        );
+        TrackingSnapshot moving = engine.snapshot(
+                START_ELAPSED + 13_000L,
+                START_EPOCH + 13_000L
+        );
+        assertEquals(2, moving.getPointCount());
+        assertEquals(10.0d, moving.getDistanceMeters(), 0.5d);
+    }
+
+    private RawFix stationaryFix(double latitude,
+                                 double accuracy,
+                                 double speed,
+                                 long second) {
+        return new RawFix(
+                latitude,
+                -46.63d,
+                760.0d,
+                accuracy,
+                speed,
+                0.0d,
+                START_EPOCH + second * 1000L
+        );
+    }
+
+    @Test
     public void movingElapsedIsStoredPerPointAndEngineCanBeRestored() {
         RecordingConfig config = new RecordingConfig(
                 ActivityType.RUN,

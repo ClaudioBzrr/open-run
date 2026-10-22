@@ -268,6 +268,7 @@ public class TrackingService extends Service {
         )
                 .setMinUpdateIntervalMillis(1000L)
                 .setMinUpdateDistanceMeters(0f)
+                .setMaxUpdateAgeMillis(2000L)
                 .setWaitForAccurateLocation(false)
                 .build();
 

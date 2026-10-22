@@ -9,10 +9,18 @@ import com.openrun.core.model.RecordingConfig;
  * rejected sample never creates a gap in the accumulated distance.
  */
 public final class TrackFilter {
-    private static final double MIN_SEGMENT_METERS = 0.8d;
+    private static final double MIN_SEGMENT_METERS = 1.5d;
+    private static final double MAX_DYNAMIC_THRESHOLD_METERS = 12.0d;
+    private static final double ACCURACY_THRESHOLD_FACTOR = 0.35d;
+    private static final double STATIONARY_SPEED_MPS = 0.35d;
+    private static final double STATIONARY_ACCURACY_FACTOR = 0.8d;
+    private static final double MIN_STATIONARY_RADIUS_METERS = 10.0d;
+    private static final double MAX_STATIONARY_RADIUS_METERS = 20.0d;
 
     private final RecordingConfig config;
     private RawFix lastAccepted;
+    private RawFix pending;
+    private int pendingConfirmationCount;
 
     public TrackFilter(RecordingConfig config) {
         this.config = config;
@@ -32,11 +40,13 @@ public final class TrackFilter {
         }
         if (lastAccepted == null) {
             lastAccepted = fix;
+            clearPending();
             return true;
         }
 
         long deltaMs = fix.getTimestampEpochMs() - lastAccepted.getTimestampEpochMs();
         if (deltaMs <= 0) {
+            clearPending();
             return false;
         }
 
@@ -46,21 +56,103 @@ public final class TrackFilter {
                 fix.getLatitude(),
                 fix.getLongitude()
         );
-        if (distance < MIN_SEGMENT_METERS) {
+        double requiredDistance = dynamicThresholdMeters(fix);
+        if (distance < requiredDistance) {
+            clearPending();
+            return false;
+        }
+
+        // Doppler speed is usually much better than position-derived speed for
+        // distinguishing a stationary phone from slow walking. Keep the anchor
+        // fixed while the receiver reports near-zero speed, so multipath jitter
+        // cannot accumulate as distance. A large displacement still wins over
+        // a bad speed flag.
+        if (fix.hasSpeed()
+                && fix.getSpeedMps() < STATIONARY_SPEED_MPS
+                && distance < stationaryRadiusMeters(fix)) {
+            clearPending();
             return false;
         }
 
         double impliedSpeed = distance / (deltaMs / 1000.0d);
         if (impliedSpeed > config.getMaxSpeedMps()) {
+            clearPending();
             return false;
         }
 
+        // When speed is unavailable or ambiguous, require three consistent
+        // fixes beyond the noise threshold before moving the anchor. Isolated
+        // multipath jumps are therefore ignored instead of becoming fake
+        // segments.
+        boolean speedConfirmsMovement = fix.hasSpeed()
+                && fix.getSpeedMps() >= 1.0d;
+        if (speedConfirmsMovement) {
+            clearPending();
+            lastAccepted = fix;
+            return true;
+        }
+        if (pending == null) {
+            pending = fix;
+            pendingConfirmationCount = 1;
+            return false;
+        }
+        double pendingDistance = GeoMath.distanceMeters(
+                pending.getLatitude(),
+                pending.getLongitude(),
+                fix.getLatitude(),
+                fix.getLongitude()
+        );
+        if (pendingDistance > Math.max(5.0d, requiredDistance * 2.0d)) {
+            pending = fix;
+            pendingConfirmationCount = 1;
+            return false;
+        }
+
+        pendingConfirmationCount++;
+        pending = fix;
+        if (pendingConfirmationCount < 3) {
+            return false;
+        }
+
+        clearPending();
         lastAccepted = fix;
         return true;
     }
 
+    private void clearPending() {
+        pending = null;
+        pendingConfirmationCount = 0;
+    }
+
+    private double dynamicThresholdMeters(RawFix fix) {
+        double accuracy = fix.hasAccuracy()
+                ? fix.getAccuracyMeters()
+                : lastAccepted.getAccuracyMeters();
+        if (!RawFix.isFinite(accuracy) || accuracy <= 0) {
+            return MIN_SEGMENT_METERS;
+        }
+        return Math.min(
+                MAX_DYNAMIC_THRESHOLD_METERS,
+                Math.max(MIN_SEGMENT_METERS, accuracy * ACCURACY_THRESHOLD_FACTOR)
+        );
+    }
+
+    private double stationaryRadiusMeters(RawFix fix) {
+        double accuracy = fix.hasAccuracy()
+                ? fix.getAccuracyMeters()
+                : lastAccepted.getAccuracyMeters();
+        if (!RawFix.isFinite(accuracy) || accuracy <= 0) {
+            return MIN_SEGMENT_METERS;
+        }
+        return Math.min(
+                MAX_STATIONARY_RADIUS_METERS,
+                Math.max(MIN_STATIONARY_RADIUS_METERS, accuracy * STATIONARY_ACCURACY_FACTOR)
+        );
+    }
+
     public void reset() {
         lastAccepted = null;
+        clearPending();
     }
 
     /**
@@ -68,6 +160,7 @@ public final class TrackFilter {
      */
     public void restoreLast(RawFix fix) {
         lastAccepted = fix;
+        clearPending();
     }
 
     public RawFix getLastAccepted() {
