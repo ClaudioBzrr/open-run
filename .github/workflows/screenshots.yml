@@ -36,7 +36,10 @@ jobs:
           disable-animations: true
           script: |
             chmod +x gradlew
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openrun.app.ui.DemoDataTest --stacktrace
+            ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w -e class com.openrun.app.ui.DemoDataTest com.openrun.app.test/androidx.test.runner.AndroidJUnitRunner
             bash scripts/capture-screenshots.sh
       - name: Upload screenshots
         if: always()

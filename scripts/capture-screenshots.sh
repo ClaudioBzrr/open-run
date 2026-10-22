@@ -45,7 +45,6 @@ capture() {
   adb exec-out screencap -p > "$1"
 }
 
-adb shell input keyevent 82 || true
 adb shell am force-stop com.openrun.app
 adb shell am start -W -n com.openrun.app/.ui.MainActivity
 sleep 8
