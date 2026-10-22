@@ -18,6 +18,7 @@ dump_ui() {
 }
 
 coords_for_id() {
+  dump_ui
   python3 - "$1" <<'PY'
 import re
 import sys
