@@ -9,7 +9,8 @@
 - Current version: 0.6.4 (versionCode 13)
 - Price: free; no ads, subscription or account
 - Repository: https://github.com/ClaudioBzrr/open-run
-- Website: https://claudiobzrr.github.io/open-run/
+- Website (English): https://claudiobzrr.github.io/open-run/
+- Website (Português): https://claudiobzrr.github.io/open-run/pt/
 - Download: https://github.com/ClaudioBzrr/open-run/releases/latest/download/app-release.apk
 - Author: Claudio Bzrr
 - Languages: English, Portuguese (pt-BR)
