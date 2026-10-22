@@ -45,10 +45,13 @@ capture() {
   adb exec-out screencap -p > "$1"
 }
 
+adb shell input keyevent 82 || true
 adb shell am force-stop com.openrun.app
-adb shell am start -W -n com.openrun.app/.ui.MainActivity >/dev/null
-sleep 4
+adb shell am start -W -n com.openrun.app/.ui.MainActivity
+sleep 8
 capture "$OUT/01-home.png"
+adb shell dumpsys window > "$OUT/debug-window.txt" 2>&1 || true
+adb logcat -d -t 300 > "$OUT/debug-logcat.txt" 2>&1 || true
 
 tap_id "com.openrun.app:id/button_menu"
 sleep 1

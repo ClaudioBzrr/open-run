@@ -39,8 +39,9 @@ jobs:
             ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.openrun.app.ui.DemoDataTest --stacktrace
             bash scripts/capture-screenshots.sh
       - name: Upload screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: openrun-screenshots
           path: docs/assets/screenshots
-          if-no-files-found: error
+          if-no-files-found: warn
