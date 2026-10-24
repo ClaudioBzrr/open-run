@@ -10,7 +10,7 @@ Compose, no backend and no account.
 
 ## Status
 
-This is the `0.6.4` local-first slice:
+This is the `0.6.5` local-first slice:
 
 - Start a run or a walk
 - Foreground location service with a 1 Hz high-accuracy request
@@ -33,6 +33,12 @@ This is the `0.6.4` local-first slice:
 - English (default) and Portuguese (`values-pt`) resources
 - Gradient home screen, redesigned live-recording screen and sneaker icon
 - No account or cloud sync; Android backups disabled
+
+New in 0.6.5:
+
+- Distance is now accumulated from dense fixes while moving instead of collapsing the path between distant anchors into straight chords. Winding runs and walks no longer come out significantly shorter than the distance actually covered.
+- Recording starts as soon as a fix meets the activity accuracy limit. Previously a stricter warmup check could keep the session in **Finding GPS** and discard the first part of the activity.
+- Stationary jitter is still rejected: movement is confirmed with Doppler speed or a consistent displacement window, and the anchor does not advance while the phone is standing still.
 
 New in 0.6.4:
 
@@ -394,18 +400,21 @@ stop/destroy.
 - Point timing uses the fix's `elapsedRealtimeNanos`, not the time at which the
   callback happened to run. Batched or delayed fixes therefore keep their real
   spacing.
-- Runs accept horizontal accuracy up to 25 m and wait for 15 m before starting;
-  walks use 30 m/20 m. Points with altitude vertical accuracy worse than 30 m
-  are stored without altitude instead of polluting elevation data.
+- Runs accept horizontal accuracy up to 25 m; walks use 30 m. A fix within that
+  limit starts the recording immediately. Points with altitude vertical
+  accuracy worse than 30 m are stored without altitude instead of polluting
+  elevation data.
 - The session stays in **Finding GPS** until a fix within the accuracy
   threshold arrives. It does not start the stopwatch with a known-bad fix.
 - Distance uses Haversine between accepted points and rejects implied speeds
-  above the activity limit. Segments shorter than 1.5 m are ignored, and the
-  threshold grows with reported accuracy.
+  above the activity limit. Once movement is confirmed, fixes are kept dense:
+  the minimum segment is 1 m and grows only mildly with accuracy (up to 3 m),
+  so curves are preserved instead of being replaced by long chords.
 - While Doppler speed is near zero, the filter keeps the previous anchor until
-  the displacement is clearly outside the current accuracy radius. When speed
-  is unavailable or ambiguous, three consistent fixes are required; a single
-  multipath jump never becomes a track segment.
+  the displacement is clearly outside the current accuracy radius. Without a
+  reliable speed, movement must show a consistent direction over a short time
+  window; three coherent fixes are required to leave a stationary state. A
+  single multipath jump never becomes a track segment.
 - Location requests reject cached fixes older than two seconds, so a stale
   position is not mistaken for new movement.
 - A pressure sensor, when present, provides barometric altitude after a GPS

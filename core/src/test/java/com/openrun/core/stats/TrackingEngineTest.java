@@ -75,6 +75,85 @@ public class TrackingEngineTest {
     }
 
     @Test
+    public void startsRecordingOnAFixWithinTheDefaultAccuracyLimit() {
+        TrackingEngine engine = newEngine(RecordingConfig.defaults(ActivityType.RUN));
+
+        engine.onFix(fix(-23.55d, -46.63d, 20.0d, START_EPOCH), START_ELAPSED);
+
+        TrackingSnapshot snapshot = engine.snapshot(
+                START_ELAPSED + 1_000L,
+                START_EPOCH + 1_000L
+        );
+        assertEquals(TrackingState.RECORDING, snapshot.getState());
+        assertEquals(1, snapshot.getPointCount());
+    }
+
+    @Test
+    public void curvedRouteWithMissingDopplerSpeedKeepsItsDistance() {
+        RecordingConfig config = new RecordingConfig(
+                ActivityType.RUN,
+                30,
+                20,
+                15.0d,
+                false
+        );
+        TrackingEngine engine = newEngine(config);
+
+        double radiusMeters = 50.0d;
+        double stepMeters = 2.0d;
+        double stepRadians = stepMeters / radiusMeters;
+        double metersPerDegreeLon = METERS_PER_DEGREE_LAT
+                * Math.cos(Math.toRadians(-23.55d));
+        double previousLatitude = 0;
+        double previousLongitude = 0;
+        double trueMeters = 0;
+        int steps = 120;
+
+        for (int step = 0; step <= steps; step++) {
+            double angle = step * stepRadians;
+            double latitude = -23.55d
+                    + radiusMeters * Math.cos(angle) / METERS_PER_DEGREE_LAT;
+            double longitude = -46.63d
+                    + radiusMeters * Math.sin(angle) / metersPerDegreeLon;
+
+            if (step > 0) {
+                trueMeters += GeoMath.distanceMeters(
+                        previousLatitude,
+                        previousLongitude,
+                        latitude,
+                        longitude
+                );
+            }
+            previousLatitude = latitude;
+            previousLongitude = longitude;
+
+            engine.onFix(
+                    new RawFix(
+                            latitude,
+                            longitude,
+                            760.0d,
+                            5.0d,
+                            Double.NaN,
+                            0.0d,
+                            START_EPOCH + step * 1_000L
+                    ),
+                    START_ELAPSED + step * 1_000L
+            );
+        }
+
+        TrackingSnapshot snapshot = engine.snapshot(
+                START_ELAPSED + steps * 1_000L,
+                START_EPOCH + steps * 1_000L
+        );
+        assertTrue(trueMeters > 200.0d);
+        assertTrue(
+                "curved track lost too much distance: "
+                        + snapshot.getDistanceMeters() + " of " + trueMeters,
+                snapshot.getDistanceMeters() > trueMeters * 0.95d
+        );
+    }
+
+    @Test
     public void rejectsImpossibleSpeedJumps() {
         RecordingConfig config = new RecordingConfig(ActivityType.RUN, 30, 20, 15.0d, false);
         TrackingEngine engine = newEngine(config);

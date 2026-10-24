@@ -6,7 +6,7 @@
 
 - Name: Open Run
 - Platform: Android 8.0+ (API 26+)
-- Current version: 0.6.4 (versionCode 13)
+- Current version: 0.6.5 (versionCode 14)
 - Price: free; no ads, subscription or account
 - Repository: https://github.com/ClaudioBzrr/open-run
 - Website (English): https://claudiobzrr.github.io/open-run/

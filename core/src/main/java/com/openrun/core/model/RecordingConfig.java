@@ -33,9 +33,12 @@ public final class RecordingConfig {
 
     public static RecordingConfig defaults(ActivityType type) {
         if (type == ActivityType.WALK) {
-            return new RecordingConfig(type, 30, 20, 8.0d, false);
+            // Start on any fix that is accurate enough to be recorded. Waiting
+            // for a stricter "warmup" fix used to discard the first part of the
+            // activity while the session stayed in ACQUIRING.
+            return new RecordingConfig(type, 30, 30, 8.0d, false);
         }
-        return new RecordingConfig(type, 25, 15, 15.0d, false);
+        return new RecordingConfig(type, 25, 25, 15.0d, false);
     }
 
     public ActivityType getType() {
