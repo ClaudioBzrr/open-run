@@ -12,8 +12,13 @@ import java.util.List;
  * Builds pace and elevation series for the performance charts.
  *
  * <p>Pace is calculated over a rolling 30-second window, then downsampled for
- * drawing. Point elapsed times are scaled to the session's moving time so
- * paused periods do not make the pace look artificially slow.</p>
+ * drawing. The moving elapsed clock is used when points carry it, so paused
+ * periods do not make the pace look artificially slow. Older points without a
+ * moving clock fall back to elapsed time scaled to the session moving time.</p>
+ *
+ * <p>Pace values are seconds per kilometre, matching {@link
+ * com.openrun.core.stats.GeoMath#paceSecPerKm(double, long)} and the chart
+ * axis formatter.</p>
  */
 public final class PerformanceSeriesBuilder {
     private static final long PACE_WINDOW_MS = 30_000L;
@@ -90,8 +95,8 @@ public final class PerformanceSeriesBuilder {
         }
 
         ActivityType type = ActivityType.fromKey(session.type);
-        float minPace = type == ActivityType.WALK ? 240f : 150f;
-        float maxPace = type == ActivityType.WALK ? 1800f : 900f;
+        float minPaceSecPerKm = type == ActivityType.WALK ? 240f : 150f;
+        float maxPaceSecPerKm = type == ActivityType.WALK ? 1800f : 900f;
 
         List<Float> paceX = new ArrayList<>();
         List<Float> paceY = new ArrayList<>();
@@ -109,8 +114,12 @@ public final class PerformanceSeriesBuilder {
             if (windowMeters < MIN_PACE_DISTANCE_METERS) {
                 continue;
             }
-            double pace = windowMs / (windowMeters / 1000.0d);
-            if (pace < minPace || pace > maxPace) {
+            // windowMs / windowMeters is numerically seconds per kilometre:
+            // (ms / m) == (s / km). Dividing by kilometres as well would make
+            // every sample 1000x too slow and the chart filters would discard
+            // the whole series.
+            double pace = windowMs / windowMeters;
+            if (pace < minPaceSecPerKm || pace > maxPaceSecPerKm) {
                 continue;
             }
             paceX.add((float) (distance[i] / 1000.0d));

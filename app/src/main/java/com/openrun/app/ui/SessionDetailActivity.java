@@ -306,28 +306,43 @@ public class SessionDetailActivity extends AppCompatActivity {
             SessionEntity session = repository.getSession(id);
             List<PointEntity> points = repository.loadPoints(id);
             List<SplitEntity> splits = repository.loadSplits(id);
-            runOnUiThread(() -> {
-                if (isFinishing() || isDestroyed()) {
-                    return;
-                }
-                if (session == null) {
+            if (session == null) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
                     Toast.makeText(
                             this,
                             R.string.session_not_found,
                             Toast.LENGTH_SHORT
                     ).show();
                     finish();
+                });
+                return;
+            }
+
+            // Chart series and route smoothing are linear in the number of
+            // points, which can be thousands for a long activity. Keep that
+            // work off the UI thread so opening and scrolling the detail
+            // screen never waits for it.
+            PerformanceSeries series = PerformanceSeriesBuilder.build(session, points);
+            List<GeoPoint> route = buildRoute(points);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) {
                     return;
                 }
                 currentSplits = splits == null
                         ? Collections.emptyList()
                         : splits;
-                bind(session, points);
+                bind(session, points, series, route);
             });
         });
     }
 
-    private void bind(SessionEntity session, List<PointEntity> points) {
+    private void bind(SessionEntity session,
+                      List<PointEntity> points,
+                      PerformanceSeries series,
+                      List<GeoPoint> route) {
         currentSession = session;
         currentPoints = points != null ? points : Collections.emptyList();
         setBusy(false);
@@ -360,7 +375,6 @@ public class SessionDetailActivity extends AppCompatActivity {
         binding.textTotalDuration.setText(Formatters.duration(total));
         binding.textMovingTime.setText(Formatters.duration(session.movingMs));
 
-        PerformanceSeries series = PerformanceSeriesBuilder.build(session, points);
         binding.chartPace.setData(
                 getString(R.string.chart_pace_title),
                 getString(R.string.chart_unit_pace),
@@ -378,7 +392,7 @@ public class SessionDetailActivity extends AppCompatActivity {
                 ContextCompat.getColor(this, R.color.brand_accent)
         );
 
-        renderRoute(points);
+        applyRoute(route);
         renderSplits();
     }
 
@@ -634,17 +648,11 @@ public class SessionDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void renderRoute(List<PointEntity> points) {
-        binding.mapProgress.setVisibility(View.GONE);
-        binding.map.getOverlays().clear();
-        routePoints = Collections.emptyList();
-
+    private static List<GeoPoint> buildRoute(List<PointEntity> points) {
         if (points == null || points.isEmpty()) {
-            showEmptyMap();
-            return;
+            return Collections.emptyList();
         }
 
-        List<GeoPoint> route = new ArrayList<>(points.size());
         List<TrackPoint> accepted = new ArrayList<>(points.size());
         for (PointEntity point : points) {
             if (point == null
@@ -667,11 +675,20 @@ public class SessionDetailActivity extends AppCompatActivity {
                     point.movingElapsedMs
             ));
         }
+
+        List<GeoPoint> route = new ArrayList<>(accepted.size());
         for (TrackPoint point : RouteSmoother.smooth(accepted)) {
             route.add(new GeoPoint(point.getLatitude(), point.getLongitude()));
         }
+        return route;
+    }
 
-        if (route.isEmpty()) {
+    private void applyRoute(List<GeoPoint> route) {
+        binding.mapProgress.setVisibility(View.GONE);
+        binding.map.getOverlays().clear();
+        routePoints = Collections.emptyList();
+
+        if (route == null || route.isEmpty()) {
             showEmptyMap();
             return;
         }
